@@ -14,17 +14,27 @@
     {
       "id": "lofi-girl",
       "title": "Lofi Hip Hop Radio",
-      "subtitle": "Lofi Girl • LIVE",
+      "subtitle": "Lofi Girl \u2022 LIVE",
       "thumbnail": "https://i.ytimg.com/vi/jfKfPfyJRdk/hqdefault.jpg",
       "videoId": "jfKfPfyJRdk"
     },
     {
       "id": "synthwave-radio",
       "title": "Synthwave Radio",
-      "subtitle": "Lofi Girl • LIVE",
+      "subtitle": "Lofi Girl \u2022 LIVE",
       "thumbnail": "https://i.ytimg.com/vi/4xDzrJKXOOY/hqdefault.jpg",
       "videoId": "4xDzrJKXOOY"
     }
   ],
-  "promos": []
+  "promos": [
+    {
+      "id": "fdroid-submission-v1",
+      "image": {
+        "en": "https://raw.githubusercontent.com/saferill/HiFi-files/refs/heads/main/promos/fdroid-promo-v1.jpg",
+        "id": "https://raw.githubusercontent.com/saferill/HiFi-files/refs/heads/main/promos/fdroid-promo-v1.jpg",
+        "in": "https://raw.githubusercontent.com/saferill/HiFi-files/refs/heads/main/promos/fdroid-promo-v1.jpg"
+      },
+      "link": "https://gitlab.com/fdroid/fdroiddata/-/merge_requests/52972"
+    }
+  ]
 }
