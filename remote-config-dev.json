@@ -1,6 +1,6 @@
 {
   "tidalClientId": "txNoH4kkV41MfH25",
-  "tidalClientSecret": "dQjy0MinCEvxi1O4UmxvxWnDjt4cgHBPw8ll6nYBk98=",
+  "tidalClientSecret": "dQjy0MinCEvxi1O4UmxvxWnDjtu4cgHBPw8ll6nBKy8=",
   "playerClients": [
     "WEB_REMIX",
     "TVHTML5",
@@ -14,16 +14,44 @@
     {
       "id": "lofi-girl",
       "title": "Lofi Hip Hop Radio",
-      "subtitle": "Lofi Girl \u2022 LIVE",
+      "subtitle": "Lofi Girl • LIVE",
       "thumbnail": "https://i.ytimg.com/vi/jfKfPfyJRdk/hqdefault.jpg",
       "videoId": "jfKfPfyJRdk"
     },
     {
-      "id": "synthwave-radio",
-      "title": "Synthwave Radio",
-      "subtitle": "Lofi Girl \u2022 LIVE",
-      "thumbnail": "https://i.ytimg.com/vi/4xDzrJKXOOY/hqdefault.jpg",
-      "videoId": "4xDzrJKXOOY"
+      "id": "synthwave-boy",
+      "title": "Synthwave / Chillwave Radio",
+      "subtitle": "Lofi Girl • LIVE",
+      "thumbnail": "https://i.ytimg.com/vi/0sfDth4lMLc/hqdefault.jpg",
+      "videoId": "0sfDth4lMLc"
+    },
+    {
+      "id": "coffee-jazz",
+      "title": "Coffee Shop Jazz Radio",
+      "subtitle": "Cafe BGM • LIVE",
+      "thumbnail": "https://i.ytimg.com/vi/hC8CH0Z3L54/hqdefault.jpg",
+      "videoId": "hC8CH0Z3L54"
+    },
+    {
+      "id": "peaceful-piano",
+      "title": "Peaceful Piano Radio",
+      "subtitle": "Relaxing Piano • LIVE",
+      "thumbnail": "https://i.ytimg.com/vi/77ZozI0rw7w/hqdefault.jpg",
+      "videoId": "77ZozI0rw7w"
+    },
+    {
+      "id": "makkah-live",
+      "title": "Makkah Live & Murottal 24 Jam",
+      "subtitle": "Masjidil Haram • LIVE",
+      "thumbnail": "https://i.ytimg.com/vi/BvEVRuIo_kA/hqdefault.jpg",
+      "videoId": "BvEVRuIo_kA"
+    },
+    {
+      "id": "kompas-tv-live",
+      "title": "Kompas TV Berita 24 Jam",
+      "subtitle": "Berita Aktual • LIVE",
+      "thumbnail": "https://i.ytimg.com/vi/DOOrIxw5xOw/hqdefault.jpg",
+      "videoId": "DOOrIxw5xOw"
     }
   ],
   "promos": []
