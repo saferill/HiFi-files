@@ -1,5 +1,30 @@
 {
   "tidalClientId": "txNoH4kkV41MfH25",
   "tidalClientSecret": "dQjy0MinCEvxi1O4UmxvxWnDjt4cgHBPw8ll6nYBk98=",
+  "playerClients": [
+    "WEB_REMIX",
+    "TVHTML5",
+    "IOS",
+    "ANDROID"
+  ],
+  "greeting": {
+    "dates": {}
+  },
+  "radioStations": [
+    {
+      "id": "lofi-girl",
+      "title": "Lofi Hip Hop Radio",
+      "subtitle": "Lofi Girl • LIVE",
+      "thumbnail": "https://i.ytimg.com/vi/jfKfPfyJRdk/hqdefault.jpg",
+      "videoId": "jfKfPfyJRdk"
+    },
+    {
+      "id": "synthwave-radio",
+      "title": "Synthwave Radio",
+      "subtitle": "Lofi Girl • LIVE",
+      "thumbnail": "https://i.ytimg.com/vi/4xDzrJKXOOY/hqdefault.jpg",
+      "videoId": "4xDzrJKXOOY"
+    }
+  ],
   "promos": []
 }
