@@ -1,0 +1,32 @@
+name: Sync Player Configs
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Fetch latest player_configs.json
+        run: |
+          curl -fsSL "https://raw.githubusercontent.com/maxrave-dev/SimpMusic-files/main/registry/player_configs.json" -o registry/player_configs.json
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "saferill"
+          git config user.email "saferill@users.noreply.github.com"
+          if ! git diff --quiet registry/player_configs.json; then
+            git add registry/player_configs.json
+            git commit -m "chore(registry): update player_configs.json"
+            git push origin main
+          else
+            echo "No changes in player_configs.json"
+          fi
