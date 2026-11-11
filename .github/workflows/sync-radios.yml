@@ -1,0 +1,31 @@
+name: Auto-Heal Live Radio Streams
+
+on:
+  schedule:
+    - cron: '0 3 * * *' # Setiap jam 03:00 subuh WIB
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync-radios:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run Auto-Heal Live Radio Sync
+        run: python scripts/sync-radios.py
+
+      - name: Commit and push if changed
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add remote-config.json remote-config-dev.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore(auto-heal): update active 24/7 live radio stream IDs" && git push)
