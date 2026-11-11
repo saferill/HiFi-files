@@ -12,46 +12,76 @@
   },
   "radioStations": [
     {
-      "id": "lofi-girl",
-      "title": "Lofi Hip Hop Radio",
-      "subtitle": "Lofi Girl • LIVE",
-      "thumbnail": "https://i.ytimg.com/vi/jfKfPfyJRdk/hqdefault.jpg",
-      "videoId": "jfKfPfyJRdk"
+      "id": "iradio-jakarta",
+      "title": "I-Radio Jakarta 89.6 FM",
+      "subtitle": "Musik Indonesia Terbaik • LIVE",
+      "thumbnail": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500",
+      "videoId": "http://stream.radiojar.com/4ywdgup3bnzuv",
+      "streamUrl": "http://stream.radiojar.com/4ywdgup3bnzuv"
     },
     {
-      "id": "synthwave-boy",
-      "title": "Synthwave / Chillwave Radio",
-      "subtitle": "Lofi Girl • LIVE",
-      "thumbnail": "https://i.ytimg.com/vi/0sfDth4lMLc/hqdefault.jpg",
-      "videoId": "0sfDth4lMLc"
+      "id": "rri-pro3",
+      "title": "RRI Pro 3 KBRN",
+      "subtitle": "Radio Berita Nasional 24 Jam • LIVE",
+      "thumbnail": "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=500",
+      "videoId": "https://stream-node0.rri.co.id/streaming/14/9014/kbrn.mp3",
+      "streamUrl": "https://stream-node0.rri.co.id/streaming/14/9014/kbrn.mp3"
     },
     {
-      "id": "coffee-jazz",
-      "title": "Coffee Shop Jazz Radio",
-      "subtitle": "Cafe BGM • LIVE",
-      "thumbnail": "https://i.ytimg.com/vi/hC8CH0Z3L54/hqdefault.jpg",
-      "videoId": "hC8CH0Z3L54"
+      "id": "sindo-trijaya",
+      "title": "Sindo Trijaya 104.6 FM",
+      "subtitle": "Berita & Talkshow Jakarta • LIVE",
+      "thumbnail": "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=500",
+      "videoId": "http://202.147.199.101:8000/;stream.nsv",
+      "streamUrl": "http://202.147.199.101:8000/;stream.nsv"
     },
     {
-      "id": "peaceful-piano",
-      "title": "Peaceful Piano Radio",
-      "subtitle": "Relaxing Piano • LIVE",
-      "thumbnail": "https://i.ytimg.com/vi/77ZozI0rw7w/hqdefault.jpg",
-      "videoId": "77ZozI0rw7w"
+      "id": "tembang-kenangan",
+      "title": "SB FM Tembang Kenangan",
+      "subtitle": "Nostalgia Lagu Lawas Indo • LIVE",
+      "thumbnail": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500",
+      "videoId": "https://stream.zeno.fm/d16n50mkzhhvv",
+      "streamUrl": "https://stream.zeno.fm/d16n50mkzhhvv"
     },
     {
-      "id": "makkah-live",
-      "title": "Makkah Live & Murottal 24 Jam",
-      "subtitle": "Masjidil Haram • LIVE",
-      "thumbnail": "https://i.ytimg.com/vi/BvEVRuIo_kA/hqdefault.jpg",
-      "videoId": "BvEVRuIo_kA"
+      "id": "bbc-world",
+      "title": "BBC World Service",
+      "subtitle": "Global News & Podcasts • LIVE",
+      "thumbnail": "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=500",
+      "videoId": "https://stream.live.vc.bbcmedia.co.uk/bbc_world_service",
+      "streamUrl": "https://stream.live.vc.bbcmedia.co.uk/bbc_world_service"
     },
     {
-      "id": "kompas-tv-live",
-      "title": "Kompas TV Berita 24 Jam",
-      "subtitle": "Berita Aktual • LIVE",
-      "thumbnail": "https://i.ytimg.com/vi/DOOrIxw5xOw/hqdefault.jpg",
-      "videoId": "DOOrIxw5xOw"
+      "id": "lofi-radio",
+      "title": "Lofi Beats Radio 24/7",
+      "subtitle": "Chill & Study Beats • LIVE",
+      "thumbnail": "https://images.unsplash.com/photo-1518495973542-4542c06a5843?w=500",
+      "videoId": "https://play.streamafrica.net/lofiradio",
+      "streamUrl": "https://play.streamafrica.net/lofiradio"
+    },
+    {
+      "id": "jazz-premier",
+      "title": "Jazz Radio Premier",
+      "subtitle": "Classic & Smooth Jazz • LIVE",
+      "thumbnail": "https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=500",
+      "videoId": "https://jazz-wr01.ice.infomaniak.ch/jazz-wr01-128.mp3",
+      "streamUrl": "https://jazz-wr01.ice.infomaniak.ch/jazz-wr01-128.mp3"
+    },
+    {
+      "id": "quran-sudais",
+      "title": "Al-Qur'an 30 Juz (Makkah)",
+      "subtitle": "Syaikh Abdurrahman As-Sudais • LIVE",
+      "thumbnail": "https://images.unsplash.com/photo-1564769625905-50e93615e769?w=500",
+      "videoId": "https://radio.mp3islam.com/listen/sudais/radio.mp3",
+      "streamUrl": "https://radio.mp3islam.com/listen/sudais/radio.mp3"
+    },
+    {
+      "id": "quran-abdulbasit",
+      "title": "Radio Tilawah Emas Al-Qur'an",
+      "subtitle": "Syaikh Abdul Basit Abdus Shamad • LIVE",
+      "thumbnail": "https://images.unsplash.com/photo-1542816417-0983c9c9ad53?w=500",
+      "videoId": "https://radio.mp3islam.com/listen/abdulbasit/radio.mp3",
+      "streamUrl": "https://radio.mp3islam.com/listen/abdulbasit/radio.mp3"
     }
   ],
   "promos": []
