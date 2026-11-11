@@ -1,5 +1,24 @@
 {
   "tidalClientId": "txNoH4kkV41MfH25",
   "tidalClientSecret": "dQjy0MinCEvxi1O4UmxvxWnDjt4cgHBPw8ll6nYBk98=",
-  "promos": []
+  "promos": [
+    {
+      "id": "test-alhuda-v1",
+      "image": {
+        "en": "https://raw.githubusercontent.com/saferill/HiFi-files/refs/heads/main/promos/alhuda-promo-v1.jpg",
+        "id": "https://raw.githubusercontent.com/saferill/HiFi-files/refs/heads/main/promos/alhuda-promo-v1.jpg",
+        "in": "https://raw.githubusercontent.com/saferill/HiFi-files/refs/heads/main/promos/alhuda-promo-v1.jpg"
+      },
+      "link": "https://github.com/saferill/Al-Huda"
+    },
+    {
+      "id": "test-wrapped-v1",
+      "image": {
+        "en": "https://raw.githubusercontent.com/saferill/HiFi-files/refs/heads/main/promos/hifi-wrapped-v1.jpg",
+        "id": "https://raw.githubusercontent.com/saferill/HiFi-files/refs/heads/main/promos/hifi-wrapped-v1.jpg",
+        "in": "https://raw.githubusercontent.com/saferill/HiFi-files/refs/heads/main/promos/hifi-wrapped-v1.jpg"
+      },
+      "link": "HiFi://library?tab=wrapped"
+    }
+  ]
 }
