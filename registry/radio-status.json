@@ -1,89 +1,103 @@
 {
-  "lastUpdated": "2026-11-12T09:52:07Z",
+  "lastUpdated": "2026-11-12T10:06:46Z",
   "stations": {
     "soft-feelings": {
-      "lastVerified": "2026-11-12T09:52:07Z",
-      "consecutiveFailures": 1,
-      "lastChecked": "2026-11-12T09:52:07Z",
-      "lastStatus": "KEPT_FALLBACK (0.0h/72h): No canonical watch?v= link matching 11-char pattern found"
+      "lastVerified": "2026-11-12T10:06:46Z",
+      "consecutiveFailures": 0,
+      "lastChecked": "2026-11-12T10:06:46Z",
+      "lastStatus": "OK",
+      "lastGoodVideoId": "GwWxRgH4nnA"
     },
     "live-radio-mix": {
-      "lastVerified": "2026-11-12T09:52:07Z",
-      "consecutiveFailures": 1,
-      "lastChecked": "2026-11-12T09:52:07Z",
-      "lastStatus": "KEPT_FALLBACK (0.0h/72h): No canonical watch?v= link matching 11-char pattern found"
+      "lastVerified": "2026-11-12T10:06:46Z",
+      "consecutiveFailures": 0,
+      "lastChecked": "2026-11-12T10:06:46Z",
+      "lastStatus": "OK",
+      "lastGoodVideoId": "0C4kZlNrhbI"
     },
     "the-good-life-radio": {
-      "lastVerified": "2026-11-12T09:52:07Z",
-      "consecutiveFailures": 1,
-      "lastChecked": "2026-11-12T09:52:07Z",
-      "lastStatus": "KEPT_FALLBACK (0.0h/72h): No canonical watch?v= link matching 11-char pattern found"
+      "lastVerified": "2026-11-12T10:06:46Z",
+      "consecutiveFailures": 0,
+      "lastChecked": "2026-11-12T10:06:46Z",
+      "lastStatus": "OK",
+      "lastGoodVideoId": "IkmLXvBfVv0"
     },
     "lofi-girl": {
-      "lastVerified": "2026-11-12T09:52:07Z",
-      "consecutiveFailures": 1,
-      "lastChecked": "2026-11-12T09:52:07Z",
-      "lastStatus": "KEPT_FALLBACK (0.0h/72h): No canonical watch?v= link matching 11-char pattern found"
+      "lastVerified": "2026-11-12T10:06:46Z",
+      "consecutiveFailures": 0,
+      "lastChecked": "2026-11-12T10:06:46Z",
+      "lastStatus": "OK",
+      "lastGoodVideoId": "4t4AQ15yj1M"
     },
     "chillhop-music": {
-      "lastVerified": "2026-11-12T09:52:07Z",
-      "consecutiveFailures": 1,
-      "lastChecked": "2026-11-12T09:52:07Z",
-      "lastStatus": "KEPT_FALLBACK (0.0h/72h): No canonical watch?v= link matching 11-char pattern found"
+      "lastVerified": "2026-11-12T10:06:46Z",
+      "consecutiveFailures": 0,
+      "lastChecked": "2026-11-12T10:06:46Z",
+      "lastStatus": "OK",
+      "lastGoodVideoId": "jiua2V9q9V0"
     },
     "cafe-jazz-tokyo": {
-      "lastVerified": "2026-11-12T09:52:07Z",
-      "consecutiveFailures": 1,
-      "lastChecked": "2026-11-12T09:52:07Z",
-      "lastStatus": "KEPT_FALLBACK (0.0h/72h): No canonical watch?v= link matching 11-char pattern found"
+      "lastVerified": "2026-11-12T10:06:46Z",
+      "consecutiveFailures": 0,
+      "lastChecked": "2026-11-12T10:06:46Z",
+      "lastStatus": "OK",
+      "lastGoodVideoId": "7euJIgAzNjw"
     },
     "yellow-brick-cinema": {
-      "lastVerified": "2026-11-12T09:52:07Z",
-      "consecutiveFailures": 1,
-      "lastChecked": "2026-11-12T09:52:07Z",
-      "lastStatus": "KEPT_FALLBACK (0.0h/72h): No canonical watch?v= link matching 11-char pattern found"
+      "lastVerified": "2026-11-12T10:06:46Z",
+      "consecutiveFailures": 0,
+      "lastChecked": "2026-11-12T10:06:46Z",
+      "lastStatus": "OK",
+      "lastGoodVideoId": "x1ij7uqBC7E"
     },
     "nasa-space-live": {
-      "lastVerified": "2026-11-12T09:52:07Z",
-      "consecutiveFailures": 1,
-      "lastChecked": "2026-11-12T09:52:07Z",
-      "lastStatus": "KEPT_FALLBACK (0.0h/72h): No canonical watch?v= link matching 11-char pattern found"
+      "lastVerified": "2026-11-12T10:06:46Z",
+      "consecutiveFailures": 0,
+      "lastChecked": "2026-11-12T10:06:46Z",
+      "lastStatus": "OK",
+      "lastGoodVideoId": "ROboUHfPUrU"
     },
     "aljazeera-english": {
-      "lastVerified": "2026-11-12T09:52:07Z",
-      "consecutiveFailures": 1,
-      "lastChecked": "2026-11-12T09:52:07Z",
-      "lastStatus": "KEPT_FALLBACK (0.0h/72h): No canonical watch?v= link matching 11-char pattern found"
+      "lastVerified": "2026-11-12T10:06:46Z",
+      "consecutiveFailures": 0,
+      "lastChecked": "2026-11-12T10:06:46Z",
+      "lastStatus": "OK",
+      "lastGoodVideoId": "gCNeDWCI0vo"
     },
     "sky-news-live": {
-      "lastVerified": "2026-11-12T09:52:07Z",
-      "consecutiveFailures": 1,
-      "lastChecked": "2026-11-12T09:52:07Z",
-      "lastStatus": "KEPT_FALLBACK (0.0h/72h): No canonical watch?v= link matching 11-char pattern found"
+      "lastVerified": "2026-11-12T10:06:46Z",
+      "consecutiveFailures": 0,
+      "lastChecked": "2026-11-12T10:06:46Z",
+      "lastStatus": "OK",
+      "lastGoodVideoId": "umLWFz4izTM"
     },
     "abc-news-live": {
-      "lastVerified": "2026-11-12T09:52:07Z",
-      "consecutiveFailures": 1,
-      "lastChecked": "2026-11-12T09:52:07Z",
-      "lastStatus": "KEPT_FALLBACK (0.0h/72h): No canonical watch?v= link matching 11-char pattern found"
+      "lastVerified": "2026-11-12T10:06:46Z",
+      "consecutiveFailures": 0,
+      "lastChecked": "2026-11-12T10:06:46Z",
+      "lastStatus": "OK",
+      "lastGoodVideoId": "KQhNZQ_Uag8"
     },
     "euronews-english": {
-      "lastVerified": "2026-11-12T09:52:07Z",
-      "consecutiveFailures": 1,
-      "lastChecked": "2026-11-12T09:52:07Z",
-      "lastStatus": "KEPT_FALLBACK (0.0h/72h): No canonical watch?v= link matching 11-char pattern found"
+      "lastVerified": "2026-11-12T10:06:46Z",
+      "consecutiveFailures": 0,
+      "lastChecked": "2026-11-12T10:06:46Z",
+      "lastStatus": "OK",
+      "lastGoodVideoId": "pykpO5kQJ98"
     },
     "makkah-live": {
-      "lastVerified": "2026-11-12T09:52:07Z",
-      "consecutiveFailures": 1,
-      "lastChecked": "2026-11-12T09:52:07Z",
-      "lastStatus": "KEPT_FALLBACK (0.0h/72h): No canonical watch?v= link matching 11-char pattern found"
+      "lastVerified": "2026-11-12T10:06:46Z",
+      "consecutiveFailures": 0,
+      "lastChecked": "2026-11-12T10:06:46Z",
+      "lastStatus": "OK",
+      "lastGoodVideoId": "HMOPLGDCUyM"
     },
     "kompas-tv-live": {
-      "lastVerified": "2026-11-12T09:52:07Z",
-      "consecutiveFailures": 1,
-      "lastChecked": "2026-11-12T09:52:07Z",
-      "lastStatus": "KEPT_FALLBACK (0.0h/72h): No canonical watch?v= link matching 11-char pattern found"
+      "lastVerified": "2026-11-12T10:06:46Z",
+      "consecutiveFailures": 0,
+      "lastChecked": "2026-11-12T10:06:46Z",
+      "lastStatus": "OK",
+      "lastGoodVideoId": "qLPFpcyTUhI"
     }
   }
 }

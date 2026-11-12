@@ -157,11 +157,12 @@ REDIRECT_REGEX = re.compile(r"watch\?v=([A-Za-z0-9_-]{11})")
 PLAYABILITY_STATUS_REGEX = re.compile(r'"playabilityStatus":\s*\{[^}]*?"status":\s*"([^"]+)"')
 
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+COOKIE_HEADER = "SOCS=CAESEwgDEgk0ODE3Nzk3MjQaAmVuIAEaBgiA_LyaBg; CONSENT=YES+cb.20210328-17-p0.en+FX+; PREF=tz=UTC&hl=en"
 
 def is_transient_failure(url, html):
     """Detect bot challenges, consent redirects, or CAPTCHA gates."""
     url_lower = url.lower()
-    if "consent.youtube.com" in url_lower or "consent.google.com" in url_lower:
+    if "consent.youtube.com" in url_lower or "consent.google.com" in url_lower or "before you continue to youtube" in html.lower():
         return True, "Redirected to Google/YouTube consent gate"
     if "/sorry/index" in url_lower or "action=\"captcharedirect\"" in html.lower() or "id=\"captcha-form\"" in html.lower():
         return True, "Encountered Google/YouTube CAPTCHA challenge"
@@ -174,7 +175,7 @@ def is_transient_failure(url, html):
 def check_oembed(video_id):
     """Check if YouTube oEmbed endpoint returns HTTP 200."""
     url = f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={video_id}&format=json"
-    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Cookie": COOKIE_HEADER})
     try:
         with urllib.request.urlopen(req, timeout=8) as resp:
             return resp.status == 200
@@ -203,6 +204,7 @@ def resolve_live_id(handle, max_retries=2):
             req = urllib.request.Request(url, headers={
                 "User-Agent": USER_AGENT,
                 "Accept-Language": "en-US,en;q=0.9",
+                "Cookie": COOKIE_HEADER,
                 "Cache-Control": "no-cache"
             })
             with urllib.request.urlopen(req, timeout=10) as resp:
@@ -233,6 +235,10 @@ def resolve_live_id(handle, max_retries=2):
                     m_furl = REDIRECT_REGEX.search(final_url)
                     if m_furl:
                         candidate_id = m_furl.group(1)
+                    else:
+                        m_vdetails = re.search(r'"videoDetails":\s*\{[^}]*?"videoId":\s*"([A-Za-z0-9_-]{11})"[^}]*?"isLive":\s*true', html)
+                        if m_vdetails:
+                            candidate_id = m_vdetails.group(1)
 
             if not candidate_id or not VID_REGEX.match(candidate_id):
                 return False, None, "No canonical watch?v= link matching 11-char pattern found"
