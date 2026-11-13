@@ -1,20 +1,25 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Auto-Heal Live Radio Synchronization for HiFi Music.
+Hardened Auto-Heal Live Radio Synchronization for HiFi Music.
 
-Strict 5-Stage Verification:
-1. Canonical watch?v= ID extraction matching ^[A-Za-z0-9_-]{11}$
-2. Page contains "isLiveNow":true and lacks "isUpcoming":true / LIVE_STREAM_OFFLINE
-3. playabilityStatus.status == "OK" (rejects LOGIN_REQUIRED, UNPLAYABLE, ERROR, age-gate)
-4. YouTube oEmbed endpoint returns HTTP 200
-5. YouTube hqdefault thumbnail returns HTTP 200
+Multi-Method Resilient Resolution (works on both local & datacenter/CI IPs):
+1. Innertube navigation/resolve_url API for /@handle/live
+2. Direct HTML /@handle/live & /@handle/streams extraction
+3. yt-dlp --get-id fallback (when installed, e.g. in GitHub Actions)
+4. Innertube youtubei/v1/search with Live filter (EgJAAQ%3D%3D)
 
-Fallback & Stale Pruning:
-- Candidate ID only replaces existing ID if all 5 checks pass.
-- If checks fail, existing videoId is retained up to STALE_HOURS (72 hours).
-- If failing for > 72h, station is excluded from remote-config.json (auto-pruned).
-- Diagnostics are saved to registry/radio-status.json (never in remote-config.json).
+Strict Live Verification:
+- Must match ^[A-Za-z0-9_-]{11}$ and not duplicate another station's videoId
+- Verified live via watch HTML ("isLiveNow":true, playabilityStatus == "OK")
+  OR Innertube player API (videoDetails.isLive == true)
+- oEmbed endpoint returns HTTP 200
+- Thumbnail hqdefault.jpg returns HTTP 200
+
+Dead-Stream Rejection:
+- If primary/backup handles fail, explicitly verifies if existing videoId is STILL live.
+- If existing videoId is confirmed ended/dead (isLive == False), it is NOT kept for 72h;
+  it is pruned immediately unless a live replacement is found.
 """
 
 import sys
@@ -23,15 +28,16 @@ import re
 import json
 import time
 import random
+import shutil
+import subprocess
 import urllib.request
 import urllib.error
 from datetime import datetime, timezone
 
-# Ensure real-time unbuffered output in terminal and workflows
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(line_buffering=True)
 
-STALE_HOURS = 72
+TRANSIENT_STALE_HOURS = 6
 CONFIG_FILES = ["remote-config.json", "remote-config-dev.json"]
 STATUS_REGISTRY = "registry/radio-status.json"
 
@@ -41,6 +47,7 @@ STATION_CHANNELS = [
         "title": "Soft Feelings Top Hits",
         "subtitle": "Easy Listening & Viral • LIVE",
         "handle": "@soft_feelings-25",
+        "searchQuery": "Soft Feelings live radio",
         "backupHandles": ["@liveradiomix"],
         "defaultVid": "GwWxRgH4nnA"
     },
@@ -49,6 +56,7 @@ STATION_CHANNELS = [
         "title": "Radio 2000s Pop Hits",
         "subtitle": "Nostalgia 2000s • LIVE",
         "handle": "@liveradiomix",
+        "searchQuery": "Live Radio Mix 2000s pop hits live",
         "backupHandles": ["@soft_feelings-25"],
         "defaultVid": "0C4kZlNrhbI"
     },
@@ -57,6 +65,7 @@ STATION_CHANNELS = [
         "title": "The Good Life Radio",
         "subtitle": "Deep House & Summer Chill • LIVE",
         "handle": "@TheGoodLifeRadio",
+        "searchQuery": "The Good Life Radio x Sensual Musique live",
         "backupHandles": ["@liveradiomix"],
         "defaultVid": "IkmLXvBfVv0"
     },
@@ -65,6 +74,7 @@ STATION_CHANNELS = [
         "title": "Lofi Hip Hop Radio",
         "subtitle": "Lofi Girl • LIVE",
         "handle": "@LofiGirl",
+        "searchQuery": "Lofi Girl beats to relax study to live",
         "backupHandles": ["@ChillhopMusic"],
         "defaultVid": "4t4AQ15yj1M"
     },
@@ -73,6 +83,7 @@ STATION_CHANNELS = [
         "title": "Chillhop Essentials",
         "subtitle": "Jazzy Beats • LIVE",
         "handle": "@ChillhopMusic",
+        "searchQuery": "Chillhop Radio jazzy lofi hip hop beats live",
         "backupHandles": ["@LofiGirl"],
         "defaultVid": "jiua2V9q9V0"
     },
@@ -81,23 +92,26 @@ STATION_CHANNELS = [
         "title": "Tokyo Cafe Jazz BGM",
         "subtitle": "Cafe Music • LIVE",
         "handle": "@CafeMusicBGMchannel",
+        "searchQuery": "Cafe Music BGM channel jazz live",
         "backupHandles": ["@YellowBrickCinema"],
-        "defaultVid": "4REA-0zfAQ8"
+        "defaultVid": "WMi37od24aw"
     },
     {
         "id": "yellow-brick-cinema",
         "title": "Deep Sleep & Relax Piano",
         "subtitle": "Sleep & Meditation • LIVE",
         "handle": "@YellowBrickCinema",
+        "searchQuery": "Yellow Brick Cinema relaxing sleep music live",
         "backupHandles": ["@CafeMusicBGMchannel"],
-        "defaultVid": "x1ij7uqBC7E"
+        "defaultVid": "ZQVu-nzhPT8"
     },
     {
         "id": "nasa-space-live",
         "title": "NASA Earth & Space Views",
         "subtitle": "ISS Space Live • LIVE",
         "handle": "@NASA",
-        "backupHandles": ["@SkyNews"],
+        "searchQuery": "NASA Live Earth from Space ISS",
+        "backupHandles": ["@SpaceVideos"],
         "defaultVid": "ROboUHfPUrU"
     },
     {
@@ -105,6 +119,7 @@ STATION_CHANNELS = [
         "title": "Al Jazeera English",
         "subtitle": "Global News • LIVE",
         "handle": "@AlJazeeraEnglish",
+        "searchQuery": "Al Jazeera English Live",
         "backupHandles": ["@SkyNews"],
         "defaultVid": "gCNeDWCI0vo"
     },
@@ -113,22 +128,25 @@ STATION_CHANNELS = [
         "title": "Sky News UK & World",
         "subtitle": "Breaking News • LIVE",
         "handle": "@SkyNews",
+        "searchQuery": "Sky News Live",
         "backupHandles": ["@euronews"],
-        "defaultVid": "23jDRUNoia4"
+        "defaultVid": "umLWFz4izTM"
     },
     {
         "id": "abc-news-live",
         "title": "ABC News Live (USA)",
         "subtitle": "US & World News • LIVE",
         "handle": "@ABCNews",
+        "searchQuery": "ABC News Live 24/7",
         "backupHandles": ["@SkyNews"],
-        "defaultVid": "x1t_803BM7Y"
+        "defaultVid": "8JK_3tFkXe0"
     },
     {
         "id": "euronews-english",
         "title": "Euronews English",
         "subtitle": "European News • LIVE",
         "handle": "@euronews",
+        "searchQuery": "Euronews English Live",
         "backupHandles": ["@AlJazeeraEnglish"],
         "defaultVid": "pykpO5kQJ98"
     },
@@ -137,7 +155,8 @@ STATION_CHANNELS = [
         "title": "Makkah Live & Al-Qur'an",
         "subtitle": "Masjidil Haram • LIVE",
         "handle": "@MakkahLiveHD",
-        "backupHandles": ["@kompastv"],
+        "searchQuery": "Makkah Live HD Masjidil Haram",
+        "backupHandles": ["@HaramainInfo"],
         "defaultVid": "HMOPLGDCUyM"
     },
     {
@@ -145,8 +164,9 @@ STATION_CHANNELS = [
         "title": "Kompas TV Berita 24 Jam",
         "subtitle": "Berita Indonesia • LIVE",
         "handle": "@kompastv",
-        "backupHandles": ["@MakkahLiveHD"],
-        "defaultVid": "C1uJzmnkp3w"
+        "searchQuery": "LIVE STREAMING 24 JAM KOMPASTV",
+        "backupHandles": ["@CNNIndonesia"],
+        "defaultVid": "DOOrIxw5xOw"
     }
 ]
 
@@ -156,34 +176,35 @@ OG_URL_REGEX = re.compile(r'<meta property="og:url" content="https://www\.youtub
 REDIRECT_REGEX = re.compile(r"watch\?v=([A-Za-z0-9_-]{11})")
 PLAYABILITY_STATUS_REGEX = re.compile(r'"playabilityStatus":\s*\{[^}]*?"status":\s*"([^"]+)"')
 
-USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
 COOKIE_HEADER = "SOCS=CAESEwgDEgk0ODE3Nzk3MjQaAmVuIAEaBgiA_LyaBg; CONSENT=YES+cb.20210328-17-p0.en+FX+; PREF=tz=UTC&hl=en"
 
+
 def is_transient_failure(url, html):
-    """Detect bot challenges, consent redirects, or CAPTCHA gates."""
     url_lower = url.lower()
-    if "consent.youtube.com" in url_lower or "consent.google.com" in url_lower or "before you continue to youtube" in html.lower():
-        return True, "Redirected to Google/YouTube consent gate"
-    if "/sorry/index" in url_lower or "action=\"captcharedirect\"" in html.lower() or "id=\"captcha-form\"" in html.lower():
-        return True, "Encountered Google/YouTube CAPTCHA challenge"
-    if "our systems have detected unusual traffic" in html.lower():
-        return True, "Encountered unusual traffic block"
+    html_lower = html.lower()
+    if "consent.youtube.com" in url_lower or "consent.google.com" in url_lower or "before you continue to youtube" in html_lower:
+        return True, "Consent gate"
+    if "/sorry/index" in url_lower or 'action="captcharedirect"' in html_lower or 'id="captcha-form"' in html_lower:
+        return True, "CAPTCHA challenge"
+    if "our systems have detected unusual traffic" in html_lower:
+        return True, "Unusual traffic block"
     if "ytInitialPlayerResponse" not in html and "ytInitialData" not in html:
-        return True, "HTML missing player data structures (likely blocked or rate-limited)"
+        return True, "Missing player data structures"
     return False, ""
 
+
 def check_oembed(video_id):
-    """Check if YouTube oEmbed endpoint returns HTTP 200."""
     url = f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={video_id}&format=json"
-    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Cookie": COOKIE_HEADER})
+    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     try:
         with urllib.request.urlopen(req, timeout=8) as resp:
             return resp.status == 200
     except Exception:
         return False
 
+
 def check_thumbnail(video_id):
-    """Check if YouTube hqdefault thumbnail returns HTTP 200."""
     url = f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg"
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     try:
@@ -192,105 +213,253 @@ def check_thumbnail(video_id):
     except Exception:
         return False
 
-def resolve_live_id(handle, max_retries=2):
+
+def verify_video_is_live(video_id):
     """
-    Fetch /live page and apply strict 5-stage validation.
-    Returns (success: bool, video_id: str or None, reason: str)
+    Strictly verify that a given 11-char videoId is currently LIVE and playable.
+    Returns (status: 'LIVE' | 'DEAD' | 'TRANSIENT', reason: str)
     """
-    url = f"https://www.youtube.com/{handle}/live"
+    if not video_id or not VID_REGEX.match(video_id):
+        return "DEAD", "Invalid videoId format"
 
-    for attempt in range(max_retries + 1):
-        try:
-            req = urllib.request.Request(url, headers={
-                "User-Agent": USER_AGENT,
-                "Accept-Language": "en-US,en;q=0.9",
-                "Cookie": COOKIE_HEADER,
-                "Cache-Control": "no-cache"
-            })
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                final_url = resp.geturl()
-                # Read up to 1MB of HTML to capture header & player JSON without hanging on stream
-                html = resp.read(1024 * 1024).decode("utf-8", errors="ignore")
+    # 1. Check Innertube player API (works even when watch HTML is stripped on datacenter IPs)
+    player_is_live = None
+    player_reason = ""
+    try:
+        url = "https://www.youtube.com/youtubei/v1/player?prettyPrint=false"
+        payload = {
+            "context": {
+                "client": {
+                    "clientName": "WEB",
+                    "clientVersion": "2.20250101.01.00",
+                    "hl": "en",
+                    "gl": "US"
+                }
+            },
+            "videoId": video_id
+        }
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json", "User-Agent": USER_AGENT}
+        )
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = json.load(resp)
+        vd = data.get("videoDetails", {})
+        ps = data.get("playabilityStatus", {}).get("status", "")
+        if ps in ("ERROR", "LOGIN_REQUIRED"):
+            return "DEAD", f"Player status {ps}"
+        if "isLive" in vd:
+            player_is_live = bool(vd.get("isLive"))
+            if not player_is_live:
+                return "DEAD", "Stream has ended (videoDetails.isLive=False)"
+    except Exception as e:
+        player_reason = str(e)
 
-            # Check transient failure
-            is_transient, trans_reason = is_transient_failure(final_url, html)
-            if is_transient:
-                if attempt < max_retries:
-                    wait_sec = 2.0 * (attempt + 1)
-                    print(f"  [WARN] {handle}: {trans_reason}. Retrying in {wait_sec}s (attempt {attempt + 1}/{max_retries})...", flush=True)
-                    time.sleep(wait_sec)
-                    continue
-                return False, None, f"Transient failure: {trans_reason}"
+    # 2. Check watch HTML for isLiveNow & playabilityStatus
+    try:
+        watch_url = f"https://www.youtube.com/watch?v={video_id}"
+        req = urllib.request.Request(watch_url, headers={
+            "User-Agent": USER_AGENT,
+            "Accept-Language": "en-US,en;q=0.9",
+            "Cookie": COOKIE_HEADER,
+            "Cache-Control": "no-cache"
+        })
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            final_url = resp.geturl()
+            html = resp.read(1024 * 1024).decode("utf-8", errors="ignore")
 
-            # 1. Canonical ID extraction
-            candidate_id = None
-            m_canon = CANONICAL_REGEX.search(html)
-            if m_canon:
-                candidate_id = m_canon.group(1)
-            else:
-                m_og = OG_URL_REGEX.search(html)
-                if m_og:
-                    candidate_id = m_og.group(1)
-                else:
-                    m_furl = REDIRECT_REGEX.search(final_url)
-                    if m_furl:
-                        candidate_id = m_furl.group(1)
-                    else:
-                        m_vdetails = re.search(r'"videoDetails":\s*\{[^}]*?"videoId":\s*"([A-Za-z0-9_-]{11})"[^}]*?"isLive":\s*true', html)
-                        if m_vdetails:
-                            candidate_id = m_vdetails.group(1)
-
-            if not candidate_id or not VID_REGEX.match(candidate_id):
-                return False, None, "No canonical watch?v= link matching 11-char pattern found"
-
-            # 2. Live Now & not upcoming/offline check
+        is_trans, trans_reason = is_transient_failure(final_url, html)
+        if not is_trans:
             has_live_now = ('"isLiveNow":true' in html) or ('"isLiveNow": true' in html)
-            if not has_live_now:
-                return False, candidate_id, "Missing 'isLiveNow':true in page content"
-
             has_upcoming = ('"isUpcoming":true' in html) or ('"isUpcoming": true' in html)
             has_offline = ("LIVE_STREAM_OFFLINE" in html)
-            if has_upcoming or has_offline:
-                return False, candidate_id, "Stream is marked as upcoming or offline"
-
-            # 3. Playability Status check (status must be OK)
             m_play = PLAYABILITY_STATUS_REGEX.search(html)
-            if not m_play:
-                return False, candidate_id, "Missing playabilityStatus block in page"
-            play_status = m_play.group(1)
-            if play_status != "OK":
-                return False, candidate_id, f"playabilityStatus is '{play_status}' (expected OK)"
+            play_status = m_play.group(1) if m_play else ""
 
-            # 4. oEmbed check
-            if not check_oembed(candidate_id):
-                return False, candidate_id, "oEmbed endpoint returned non-200"
+            if has_upcoming or has_offline or not has_live_now:
+                return "DEAD", "Watch page indicates stream is not live (ended/upcoming/offline)"
+            if play_status and play_status != "OK":
+                return "DEAD", f"playabilityStatus={play_status}"
+            if check_oembed(video_id) and check_thumbnail(video_id):
+                return "LIVE", "OK"
+            return "DEAD", "oEmbed or thumbnail check failed"
+    except urllib.error.HTTPError as e:
+        if e.code in (404, 410):
+            return "DEAD", f"HTTP {e.code}"
+    except Exception:
+        pass
 
-            # 5. Thumbnail check
-            if not check_thumbnail(candidate_id):
-                return False, candidate_id, "Thumbnail endpoint returned non-200"
+    # If watch HTML hit a transient gate on CI, trust player_is_live + oEmbed + thumbnail
+    if player_is_live is True and check_oembed(video_id) and check_thumbnail(video_id):
+        return "LIVE", "OK (verified via Innertube player + oEmbed)"
 
-            return True, candidate_id, "OK"
+    return "TRANSIENT", player_reason or "Transient verification failure"
 
-        except urllib.error.HTTPError as e:
-            if attempt < max_retries and e.code in (429, 500, 502, 503):
-                time.sleep(2.0 * (attempt + 1))
+
+def resolve_via_innertube_url(handle):
+    """Method 1: Resolve /@handle/live via Innertube navigation/resolve_url JSON API."""
+    url = "https://www.youtube.com/youtubei/v1/navigation/resolve_url?prettyPrint=false"
+    payload = {
+        "context": {
+            "client": {
+                "clientName": "WEB",
+                "clientVersion": "2.20250101.01.00",
+                "hl": "en",
+                "gl": "US"
+            }
+        },
+        "url": f"https://www.youtube.com/{handle}/live"
+    }
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json", "User-Agent": USER_AGENT}
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = json.load(resp)
+            vid = data.get("endpoint", {}).get("watchEndpoint", {}).get("videoId")
+            if vid and VID_REGEX.match(vid):
+                return vid
+    except Exception:
+        pass
+    return None
+
+
+def resolve_via_html(handle):
+    """Method 2: Fetch /@handle/live and /@handle/streams HTML."""
+    for suffix in ("live", "streams"):
+        url = f"https://www.youtube.com/{handle}/{suffix}"
+        req = urllib.request.Request(url, headers={
+            "User-Agent": USER_AGENT,
+            "Accept-Language": "en-US,en;q=0.9",
+            "Cookie": COOKIE_HEADER,
+            "Cache-Control": "no-cache"
+        })
+        try:
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                final_url = resp.geturl()
+                html = resp.read(1024 * 1024).decode("utf-8", errors="ignore")
+            is_trans, _ = is_transient_failure(final_url, html)
+            if is_trans:
                 continue
-            return False, None, f"HTTP Error {e.code}: {e.reason}"
-        except urllib.error.URLError as e:
-            if attempt < max_retries:
-                time.sleep(1.5 * (attempt + 1))
-                continue
-            return False, None, f"Network error: {e.reason}"
-        except Exception as e:
-            if attempt < max_retries:
-                time.sleep(1.5 * (attempt + 1))
-                continue
-            return False, None, f"Unexpected error: {str(e)}"
+            if suffix == "live":
+                for rx in (CANONICAL_REGEX, OG_URL_REGEX):
+                    m = rx.search(html)
+                    if m:
+                        return m.group(1)
+                m_f = REDIRECT_REGEX.search(final_url)
+                if m_f:
+                    return m_f.group(1)
+            else:
+                # Look for live badge near videoId in /streams
+                matches = re.findall(r'"videoId":"([A-Za-z0-9_-]{11})".{0,1500}?"BADGE_STYLE_TYPE_LIVE_NOW"', html)
+                if matches:
+                    return matches[0]
+        except Exception:
+            continue
+    return None
 
-    return False, None, "Max retries exceeded"
+
+def resolve_via_ytdlp(handle):
+    """Method 3: Use yt-dlp --get-id if installed in environment (e.g. GitHub Actions)."""
+    if not shutil.which("yt-dlp"):
+        return None
+    try:
+        proc = subprocess.run(
+            ["yt-dlp", "--get-id", "--no-playlist", "--no-warnings", f"https://www.youtube.com/{handle}/live"],
+            capture_output=True,
+            text=True,
+            timeout=15
+        )
+        if proc.returncode == 0:
+            vid = proc.stdout.strip().splitlines()[0].strip()
+            if VID_REGEX.match(vid):
+                return vid
+    except Exception:
+        pass
+    return None
+
+
+def resolve_via_search(query):
+    """Method 4: Innertube search with Live filter (EgJAAQ%3D%3D)."""
+    if not query:
+        return []
+    url = "https://www.youtube.com/youtubei/v1/search?prettyPrint=false"
+    payload = {
+        "context": {
+            "client": {
+                "clientName": "WEB",
+                "clientVersion": "2.20250101.01.00",
+                "hl": "en",
+                "gl": "US"
+            }
+        },
+        "query": query,
+        "params": "EgJAAQ%3D%3D"
+    }
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json", "User-Agent": USER_AGENT}
+    )
+    candidates = []
+    try:
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = json.load(resp)
+        contents = data.get("contents", {}).get("twoColumnSearchResultsRenderer", {}).get("primaryContents", {}).get("sectionListRenderer", {}).get("contents", [])
+        for sec in contents:
+            for it in sec.get("itemSectionRenderer", {}).get("contents", []):
+                vr = it.get("videoRenderer")
+                if not vr:
+                    continue
+                vid = vr.get("videoId")
+                badges = str(vr.get("badges", [])) + str(vr.get("thumbnailOverlays", []))
+                if vid and VID_REGEX.match(vid) and "LIVE" in badges:
+                    candidates.append(vid)
+                    if len(candidates) >= 3:
+                        return candidates
+    except Exception:
+        pass
+    return candidates
+
+
+def find_live_id_for_station(item, used_vids):
+    """Try all resolution methods for a station and return (success, vid, reason)."""
+    handles = [item["handle"]] + item.get("backupHandles", [])
+
+    # 1. Try handle-based resolvers first (most accurate for exact channel)
+    for h in handles:
+        candidates = []
+        for resolver_name, resolver_fn in (
+            ("Innertube resolve_url", resolve_via_innertube_url),
+            ("HTML /live+/streams", resolve_via_html),
+            ("yt-dlp", resolve_via_ytdlp),
+        ):
+            vid = resolver_fn(h)
+            if vid and vid not in candidates and vid not in used_vids:
+                candidates.append(vid)
+                status, reason = verify_video_is_live(vid)
+                if status == "LIVE":
+                    return True, vid, f"OK ({h} via {resolver_name})"
+                else:
+                    print(f"  [INFO] {h} candidate {vid} via {resolver_name} rejected: {reason}", flush=True)
+
+    # 2. Fallback to Innertube Live Search for the station
+    search_q = item.get("searchQuery")
+    if search_q:
+        for vid in resolve_via_search(search_q):
+            if vid in used_vids:
+                continue
+            status, reason = verify_video_is_live(vid)
+            if status == "LIVE":
+                return True, vid, "OK (via Live Search)"
+
+    return False, None, "All live resolution methods returned no active live stream"
+
 
 def load_existing_video_ids():
-    """Load existing video IDs from remote-config.json to prevent fallback to stale seeds."""
     target = CONFIG_FILES[0]
     if os.path.exists(target):
         try:
@@ -301,8 +470,8 @@ def load_existing_video_ids():
             print(f"[WARN] Failed to load existing video IDs from {target}: {e}", flush=True)
     return {}
 
+
 def load_status_registry():
-    """Load registry/radio-status.json."""
     if os.path.exists(STATUS_REGISTRY):
         try:
             with open(STATUS_REGISTRY, "r", encoding="utf-8") as f:
@@ -310,6 +479,7 @@ def load_status_registry():
         except Exception as e:
             print(f"[WARN] Failed to read {STATUS_REGISTRY}: {e}", flush=True)
     return {"lastUpdated": None, "stations": {}}
+
 
 def main():
     dry_run = "--dry-run" in sys.argv
@@ -326,39 +496,23 @@ def main():
     now_iso = now_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
 
     active_stations = []
+    used_vids = set()
     summary_rows = []
 
     for item in STATION_CHANNELS:
         st_id = item["id"]
-        primary_handle = item["handle"]
         current_cfg_vid = existing_vids.get(st_id) or item.get("defaultVid")
         record = station_records.get(st_id, {})
 
-        handles_to_try = [primary_handle] + item.get("backupHandles", [])
-        success = False
-        candidate_vid = None
-        reason = ""
-        resolved_handle = primary_handle
-
-        for h in handles_to_try:
-            print(f"\nResolving [{st_id}] ({h})...", flush=True)
-            success, candidate_vid, reason = resolve_live_id(h)
-            time.sleep(random.uniform(0.8, 1.5))
-            if success:
-                resolved_handle = h
-                break
-            else:
-                print(f"  [INFO] Handle {h} not live: {reason}. Trying next if available...", flush=True)
+        print(f"\nResolving [{st_id}] ({item['handle']})...", flush=True)
+        success, candidate_vid, reason = find_live_id_for_station(item, used_vids)
+        time.sleep(random.uniform(0.5, 1.0))
 
         if success:
-            final_vid = candidate_vid
-            passed_str = "PASS"
-            status_desc = "OK"
-
-            # Update diagnostics
+            used_vids.add(candidate_vid)
             record["lastVerified"] = now_iso
-            record["lastGoodVideoId"] = final_vid
-            record["lastStatus"] = "OK"
+            record["lastGoodVideoId"] = candidate_vid
+            record["lastStatus"] = reason
             record["consecutiveFailures"] = 0
             record["lastChecked"] = now_iso
             station_records[st_id] = record
@@ -367,70 +521,100 @@ def main():
                 "id": st_id,
                 "title": item["title"],
                 "subtitle": item["subtitle"],
-                "thumbnail": f"https://i.ytimg.com/vi/{final_vid}/hqdefault.jpg",
-                "videoId": final_vid
+                "thumbnail": f"https://i.ytimg.com/vi/{candidate_vid}/hqdefault.jpg",
+                "videoId": candidate_vid
             })
-            summary_rows.append((st_id, current_cfg_vid, final_vid, passed_str, status_desc))
-            print(f"  ✓ Verified LIVE: {final_vid}", flush=True)
+            summary_rows.append((st_id, current_cfg_vid, candidate_vid, "PASS", reason))
+            print(f"  ✓ Verified LIVE: {candidate_vid} ({reason})", flush=True)
 
         else:
-            passed_str = "REJECT"
-            last_ver_str = record.get("lastVerified")
-            if last_ver_str:
-                try:
-                    last_ver_dt = datetime.fromisoformat(last_ver_str.replace("Z", "+00:00"))
-                except Exception:
-                    last_ver_dt = now_utc
-            else:
-                # If first time tracking and existing config has a station, seed grace period from now
-                last_ver_dt = now_utc
+            # Explicitly check whether the existing videoId is STILL live or confirmed dead
+            existing_status, existing_reason = (
+                verify_video_is_live(current_cfg_vid)
+                if current_cfg_vid and current_cfg_vid not in used_vids
+                else ("DEAD", "Duplicate or missing ID")
+            )
+
+            if existing_status == "LIVE":
+                used_vids.add(current_cfg_vid)
                 record["lastVerified"] = now_iso
-
-            unverified_hours = (now_utc - last_ver_dt).total_seconds() / 3600.0
-            failures = record.get("consecutiveFailures", 0) + 1
-            record["consecutiveFailures"] = failures
-            record["lastChecked"] = now_iso
-
-            if unverified_hours > STALE_HOURS:
-                status_desc = f"PRUNED (> {STALE_HOURS}h stale): {reason}"
-                record["lastStatus"] = status_desc
-                station_records[st_id] = record
-                summary_rows.append((st_id, current_cfg_vid, "-", "PRUNED", status_desc))
-                print(f"  ✗ Pruned station: unverified for {unverified_hours:.1f}h (> {STALE_HOURS}h). Reason: {reason}", flush=True)
-            else:
-                fallback_vid = current_cfg_vid or record.get("lastGoodVideoId") or item.get("defaultVid")
-                status_desc = f"KEPT_FALLBACK ({unverified_hours:.1f}h/{STALE_HOURS}h): {reason}"
-                record["lastStatus"] = status_desc
+                record["lastGoodVideoId"] = current_cfg_vid
+                record["lastStatus"] = f"KEPT_LIVE: Existing stream still live ({existing_reason})"
+                record["consecutiveFailures"] = 0
+                record["lastChecked"] = now_iso
                 station_records[st_id] = record
 
                 active_stations.append({
                     "id": st_id,
                     "title": item["title"],
                     "subtitle": item["subtitle"],
-                    "thumbnail": f"https://i.ytimg.com/vi/{fallback_vid}/hqdefault.jpg",
-                    "videoId": fallback_vid
+                    "thumbnail": f"https://i.ytimg.com/vi/{current_cfg_vid}/hqdefault.jpg",
+                    "videoId": current_cfg_vid
                 })
-                summary_rows.append((st_id, current_cfg_vid, fallback_vid, passed_str, status_desc))
-                print(f"  ⚠ Verification failed ({reason}). Retained fallback: {fallback_vid} (stale {unverified_hours:.1f}h)", flush=True)
+                summary_rows.append((st_id, current_cfg_vid, current_cfg_vid, "PASS", "Existing stream verified LIVE"))
+                print(f"  ✓ Existing videoId still LIVE: {current_cfg_vid}", flush=True)
 
-    # Print Summary Table
-    print("\n" + "=" * 115, flush=True)
+            elif existing_status == "DEAD":
+                # Confirmed dead! Do NOT keep dead streams in remote-config.json!
+                failures = record.get("consecutiveFailures", 0) + 1
+                record["consecutiveFailures"] = failures
+                record["lastChecked"] = now_iso
+                status_desc = f"PRUNED_DEAD: {existing_reason}"
+                record["lastStatus"] = status_desc
+                station_records[st_id] = record
+                summary_rows.append((st_id, current_cfg_vid, "-", "PRUNED", status_desc))
+                print(f"  ✗ Confirmed DEAD ({existing_reason}). Removed from active list!", flush=True)
+
+            else:
+                # Transient network failure: only keep up to TRANSIENT_STALE_HOURS (6h)
+                last_ver_str = record.get("lastVerified")
+                try:
+                    last_ver_dt = datetime.fromisoformat(last_ver_str.replace("Z", "+00:00")) if last_ver_str else now_utc
+                except Exception:
+                    last_ver_dt = now_utc
+
+                unverified_hours = (now_utc - last_ver_dt).total_seconds() / 3600.0
+                failures = record.get("consecutiveFailures", 0) + 1
+                record["consecutiveFailures"] = failures
+                record["lastChecked"] = now_iso
+
+                if unverified_hours > TRANSIENT_STALE_HOURS:
+                    status_desc = f"PRUNED_STALE ({unverified_hours:.1f}h/{TRANSIENT_STALE_HOURS}h): {reason}"
+                    record["lastStatus"] = status_desc
+                    station_records[st_id] = record
+                    summary_rows.append((st_id, current_cfg_vid, "-", "PRUNED", status_desc))
+                    print(f"  ✗ Pruned stale station ({unverified_hours:.1f}h).", flush=True)
+                else:
+                    used_vids.add(current_cfg_vid)
+                    status_desc = f"KEPT_TRANSIENT ({unverified_hours:.1f}h/{TRANSIENT_STALE_HOURS}h): {existing_reason}"
+                    record["lastStatus"] = status_desc
+                    station_records[st_id] = record
+
+                    active_stations.append({
+                        "id": st_id,
+                        "title": item["title"],
+                        "subtitle": item["subtitle"],
+                        "thumbnail": f"https://i.ytimg.com/vi/{current_cfg_vid}/hqdefault.jpg",
+                        "videoId": current_cfg_vid
+                    })
+                    summary_rows.append((st_id, current_cfg_vid, current_cfg_vid, "WARN", status_desc))
+                    print(f"  ⚠ Transient check ({existing_reason}). Kept temporarily ({unverified_hours:.1f}h).", flush=True)
+
+    print("\n" + "=" * 120, flush=True)
     print(f"{'STATION ID':<22} | {'OLD VIDEO ID':<13} | {'NEW VIDEO ID':<13} | {'STATUS':<7} | {'REASON'}", flush=True)
-    print("=" * 115, flush=True)
+    print("=" * 120, flush=True)
     for sid, old_v, new_v, status_val, rsn in summary_rows:
         print(f"{sid:<22} | {str(old_v):<13} | {str(new_v):<13} | {status_val:<7} | {rsn}", flush=True)
-    print("=" * 115, flush=True)
+    print("=" * 120, flush=True)
     print(f"Active Stations Count: {len(active_stations)} / {len(STATION_CHANNELS)}", flush=True)
 
     if not dry_run:
-        # Save Status Registry
         status_data["lastUpdated"] = now_iso
         os.makedirs(os.path.dirname(STATUS_REGISTRY), exist_ok=True)
         with open(STATUS_REGISTRY, "w", encoding="utf-8") as f:
             json.dump(status_data, f, indent=2, ensure_ascii=False)
         print(f"Saved diagnostic telemetry to {STATUS_REGISTRY}", flush=True)
 
-        # Update Remote Configs
         for cfg_path in CONFIG_FILES:
             if not os.path.exists(cfg_path):
                 continue
@@ -446,13 +630,13 @@ def main():
     else:
         print("[DRY RUN] File write skipped.", flush=True)
 
-    # Script exits with error code ONLY if ALL stations failed (zero active stations)
     if len(active_stations) == 0:
         print("\n[CRITICAL] All stations failed validation or were pruned!", flush=True)
         sys.exit(1)
 
     print("\nSynchronization completed successfully.", flush=True)
     sys.exit(0)
+
 
 if __name__ == "__main__":
     main()
