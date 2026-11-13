@@ -24,6 +24,9 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install yt-dlp fallback resolver
+        run: pip install -q --upgrade yt-dlp
+
       - name: Run Auto-Heal Live Radio Sync
         run: python scripts/sync-radios.py
 
