@@ -671,7 +671,7 @@ def main():
                 "en": "Good news! HiFi is currently undergoing the official submission process for F-Droid so you can install and update the app more safely and transparently as verified open-source software. Thank you for your support!"
             },
             "button": {},
-            "link": ""
+            "link": "https://github.com/saferill/HiFi"
         }
 
         for cfg_path in CONFIG_FILES:

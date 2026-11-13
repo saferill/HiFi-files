@@ -92,8 +92,8 @@
       "id": "euronews-english",
       "title": "Euronews English",
       "subtitle": "European News • LIVE",
-      "thumbnail": "https://i.ytimg.com/vi/abtPlpFzLiM/hqdefault.jpg",
-      "videoId": "abtPlpFzLiM"
+      "thumbnail": "https://i.ytimg.com/vi/pykpO5kQJ98/hqdefault.jpg",
+      "videoId": "pykpO5kQJ98"
     },
     {
       "id": "makkah-live",
@@ -125,7 +125,7 @@
         "en": "Good news! HiFi is currently undergoing the official submission process for F-Droid so you can install and update the app more safely and transparently as verified open-source software. Thank you for your support!"
       },
       "button": {},
-      "link": ""
+      "link": "https://github.com/saferill/HiFi"
     }
   ]
 }

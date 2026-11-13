@@ -1,101 +1,101 @@
 {
-  "lastUpdated": "2026-11-13T07:10:56Z",
+  "lastUpdated": "2026-11-13T07:22:27Z",
   "stations": {
     "soft-feelings": {
-      "lastVerified": "2026-11-13T07:10:56Z",
+      "lastVerified": "2026-11-13T07:22:27Z",
       "consecutiveFailures": 0,
-      "lastChecked": "2026-11-13T07:10:56Z",
+      "lastChecked": "2026-11-13T07:22:27Z",
       "lastStatus": "OK (@soft_feelings-25 via Innertube resolve_url)",
       "lastGoodVideoId": "GwWxRgH4nnA"
     },
     "live-radio-mix": {
-      "lastVerified": "2026-11-13T07:10:56Z",
+      "lastVerified": "2026-11-13T07:22:27Z",
       "consecutiveFailures": 0,
-      "lastChecked": "2026-11-13T07:10:56Z",
+      "lastChecked": "2026-11-13T07:22:27Z",
       "lastStatus": "OK (preferredVid b-bK2Vn3D38)",
       "lastGoodVideoId": "b-bK2Vn3D38"
     },
     "the-good-life-radio": {
-      "lastVerified": "2026-11-13T07:10:56Z",
+      "lastVerified": "2026-11-13T07:22:27Z",
       "consecutiveFailures": 0,
-      "lastChecked": "2026-11-13T07:10:56Z",
+      "lastChecked": "2026-11-13T07:22:27Z",
       "lastStatus": "OK (@TheGoodLifeRadio via Innertube resolve_url)",
       "lastGoodVideoId": "IkmLXvBfVv0"
     },
     "lofi-girl": {
-      "lastVerified": "2026-11-13T07:10:56Z",
+      "lastVerified": "2026-11-13T07:22:27Z",
       "consecutiveFailures": 0,
-      "lastChecked": "2026-11-13T07:10:56Z",
+      "lastChecked": "2026-11-13T07:22:27Z",
       "lastStatus": "OK (@LofiGirl via Innertube resolve_url)",
       "lastGoodVideoId": "4t4AQ15yj1M"
     },
     "chillhop-music": {
-      "lastVerified": "2026-11-13T07:10:56Z",
+      "lastVerified": "2026-11-13T07:22:27Z",
       "consecutiveFailures": 0,
-      "lastChecked": "2026-11-13T07:10:56Z",
+      "lastChecked": "2026-11-13T07:22:27Z",
       "lastStatus": "OK (@ChillhopMusic via Innertube resolve_url)",
       "lastGoodVideoId": "jiua2V9q9V0"
     },
     "cafe-jazz-tokyo": {
-      "lastVerified": "2026-11-13T07:10:56Z",
+      "lastVerified": "2026-11-13T07:22:27Z",
       "consecutiveFailures": 0,
-      "lastChecked": "2026-11-13T07:10:56Z",
+      "lastChecked": "2026-11-13T07:22:27Z",
       "lastStatus": "OK (@CafeMusicBGMchannel via Innertube resolve_url)",
       "lastGoodVideoId": "WMi37od24aw"
     },
     "yellow-brick-cinema": {
-      "lastVerified": "2026-11-13T07:10:56Z",
+      "lastVerified": "2026-11-13T07:22:27Z",
       "consecutiveFailures": 0,
-      "lastChecked": "2026-11-13T07:10:56Z",
+      "lastChecked": "2026-11-13T07:22:27Z",
       "lastStatus": "OK (@YellowBrickCinema via Innertube resolve_url)",
       "lastGoodVideoId": "GtGrRTv5yP4"
     },
     "nasa-space-live": {
-      "lastVerified": "2026-11-13T07:10:56Z",
+      "lastVerified": "2026-11-13T07:22:27Z",
       "consecutiveFailures": 0,
-      "lastChecked": "2026-11-13T07:10:56Z",
+      "lastChecked": "2026-11-13T07:22:27Z",
       "lastStatus": "OK (@NASA via Innertube resolve_url)",
       "lastGoodVideoId": "ROboUHfPUrU"
     },
     "aljazeera-english": {
-      "lastVerified": "2026-11-13T07:10:56Z",
+      "lastVerified": "2026-11-13T07:22:27Z",
       "consecutiveFailures": 0,
-      "lastChecked": "2026-11-13T07:10:56Z",
+      "lastChecked": "2026-11-13T07:22:27Z",
       "lastStatus": "OK (@AlJazeeraEnglish via Innertube resolve_url)",
       "lastGoodVideoId": "gCNeDWCI0vo"
     },
     "sky-news-live": {
-      "lastVerified": "2026-11-13T07:10:56Z",
+      "lastVerified": "2026-11-13T07:22:27Z",
       "consecutiveFailures": 0,
-      "lastChecked": "2026-11-13T07:10:56Z",
+      "lastChecked": "2026-11-13T07:22:27Z",
       "lastStatus": "OK (@SkyNews via Innertube resolve_url)",
       "lastGoodVideoId": "xMboXwD4MJs"
     },
     "abc-news-live": {
-      "lastVerified": "2026-11-13T07:10:56Z",
+      "lastVerified": "2026-11-13T07:22:27Z",
       "consecutiveFailures": 0,
-      "lastChecked": "2026-11-13T07:10:56Z",
+      "lastChecked": "2026-11-13T07:22:27Z",
       "lastStatus": "OK (@ABCNews via Innertube resolve_url)",
       "lastGoodVideoId": "KQhNZQ_Uag8"
     },
     "euronews-english": {
-      "lastVerified": "2026-11-13T07:10:56Z",
+      "lastVerified": "2026-11-13T07:22:27Z",
       "consecutiveFailures": 0,
-      "lastChecked": "2026-11-13T07:10:56Z",
+      "lastChecked": "2026-11-13T07:22:27Z",
       "lastStatus": "OK (@euronews via Innertube resolve_url)",
-      "lastGoodVideoId": "abtPlpFzLiM"
+      "lastGoodVideoId": "pykpO5kQJ98"
     },
     "makkah-live": {
-      "lastVerified": "2026-11-13T07:10:56Z",
+      "lastVerified": "2026-11-13T07:22:27Z",
       "consecutiveFailures": 0,
-      "lastChecked": "2026-11-13T07:10:56Z",
+      "lastChecked": "2026-11-13T07:22:27Z",
       "lastStatus": "OK (@MakkahLiveHD via Innertube resolve_url)",
       "lastGoodVideoId": "HMOPLGDCUyM"
     },
     "kompas-tv-live": {
-      "lastVerified": "2026-11-13T07:10:56Z",
+      "lastVerified": "2026-11-13T07:22:27Z",
       "consecutiveFailures": 0,
-      "lastChecked": "2026-11-13T07:10:56Z",
+      "lastChecked": "2026-11-13T07:22:27Z",
       "lastStatus": "OK (@kompastv via HTML /live+/streams)",
       "lastGoodVideoId": "-m_SSRMqUr0"
     }
