@@ -1,0 +1,53 @@
+name: Broad Live Radio Discovery
+
+on:
+  schedule:
+    - cron: '0 3,15 * * *' # Twice daily (03:00 and 15:00 UTC)
+  workflow_dispatch:
+
+concurrency:
+  group: hifi-files-auto-publish
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  discover-radios:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout production branch (main)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run Broad Live Radio Discovery (Review-Only)
+        run: python scripts/sync-radios.py --mode discovery
+
+      - name: Commit and push discovery candidates if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if [ -f registry/discovery-candidates.json ]; then
+            git add registry/discovery-candidates.json
+          fi
+          if ! git diff --staged --quiet; then
+            git commit -m "chore(discovery): queue new live radio candidates for review [skip ci]"
+            git fetch origin main
+            if ! git rebase origin/main; then
+              echo "::error::Rebase onto origin/main failed due to conflict. Aborting without force-push."
+              git rebase --abort || true
+              exit 1
+            fi
+            git push origin main
+          else
+            echo "No new discovery candidates."
+          fi
+

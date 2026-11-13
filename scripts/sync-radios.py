@@ -1,701 +1,523 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Hardened Auto-Heal Live Radio Synchronization for HiFi Music.
+Hardened Auto-Heal Live Radio Synchronization & Discovery CLI for HiFi Music.
 
-Multi-Method Resilient Resolution (works on both local & datacenter/CI IPs):
-1. Innertube navigation/resolve_url API for /@handle/live
-2. Direct HTML /@handle/live & /@handle/streams extraction
-3. yt-dlp --get-id fallback (when installed, e.g. in GitHub Actions)
-4. Innertube youtubei/v1/search with Live filter (EgJAAQ%3D%3D)
-
-Strict Live Verification:
-- Must match ^[A-Za-z0-9_-]{11}$ and not duplicate another station's videoId
-- Verified live via watch HTML ("isLiveNow":true, playabilityStatus == "OK")
-  OR Innertube player API (videoDetails.isLive == true)
-- oEmbed endpoint returns HTTP 200
-- Thumbnail hqdefault.jpg returns HTTP 200
-
-Dead-Stream Rejection:
-- If primary/backup handles fail, explicitly verifies if existing videoId is STILL live.
-- If existing videoId is confirmed ended/dead (isLive == False), it is NOT kept for 72h;
-  it is pruned immediately unless a live replacement is found.
+Modes:
+- health-check (default): Updates existing enabled stations from approved
+  allowedChannelIds, enforces 6-hour balanced fallback from `lastVerified`,
+  re-verifies LIVE candidates before publication, preserves promos/other fields,
+  and publishes valid 0..N station lists atomically per file.
+- discovery: Runs bounded broad search and queues new channel candidates in
+  registry/discovery-candidates.json for manual review (never auto-publishes).
 """
 
-import sys
-import os
-import re
-import json
-import time
-import random
-import shutil
-import subprocess
-import urllib.request
-import urllib.error
+import argparse
 from datetime import datetime, timezone
+import json
+import os
+import random
+import sys
+import tempfile
+import time
+import urllib.request
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+if SCRIPT_DIR not in sys.path:
+    sys.path.insert(0, SCRIPT_DIR)
+
+from radio_catalog import STATION_CATALOG, StationSpec
+from radio_discovery import DISCOVERY_REGISTRY, run_discovery
+from radio_policy import (
+    OPERATIONAL_LOW_STATION_THRESHOLD,
+    TELEMETRY_SCHEMA_VERSION,
+    TRANSIENT_GRACE_HOURS,
+    detect_provider_degradation,
+    evaluate_fallback_eligibility,
+)
+from radio_providers import (
+    is_valid_video_id,
+    resolve_via_html,
+    resolve_via_innertube_url,
+    resolve_via_ytdlp,
+    search_innertube_live,
+)
+from radio_verifier import (
+    STATUS_DISABLED,
+    STATUS_LIVE,
+    STATUS_OFFLINE,
+    STATUS_TRANSIENT,
+    VerificationResult,
+    is_transient_html_gate,
+    verify_video_is_live,
+)
+
+validate_config_mod = __import__("validate-config")
+validate_config_data = validate_config_mod.validate_config_data
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(line_buffering=True)
 
-TRANSIENT_STALE_HOURS = 6
 CONFIG_FILES = ["remote-config.json", "remote-config-dev.json"]
 STATUS_REGISTRY = "registry/radio-status.json"
-
-STATION_CHANNELS = [
-    {
-        "id": "soft-feelings",
-        "title": "Soft Feelings Top Hits",
-        "subtitle": "Easy Listening & Viral • LIVE",
-        "handle": "@soft_feelings-25",
-        "searchQuery": "Soft Feelings live radio",
-        "backupHandles": ["@liveradiomix"],
-        "defaultVid": "GwWxRgH4nnA"
-    },
-    {
-        "id": "live-radio-mix",
-        "title": "Best Radio 1 POP Hits",
-        "subtitle": "Pop Hits 2026 • LIVE",
-        "handle": "@liveradiomix",
-        "searchQuery": "Best Radio 1 POP Hits live",
-        "backupHandles": ["@soft_feelings-25"],
-        "preferredVid": "b-bK2Vn3D38",
-        "defaultVid": "b-bK2Vn3D38"
-    },
-    {
-        "id": "the-good-life-radio",
-        "title": "The Good Life Radio",
-        "subtitle": "Deep House & Summer Chill • LIVE",
-        "handle": "@TheGoodLifeRadio",
-        "searchQuery": "The Good Life Radio x Sensual Musique live",
-        "backupHandles": ["@liveradiomix"],
-        "defaultVid": "IkmLXvBfVv0"
-    },
-    {
-        "id": "lofi-girl",
-        "title": "Lofi Hip Hop Radio",
-        "subtitle": "Lofi Girl • LIVE",
-        "handle": "@LofiGirl",
-        "searchQuery": "Lofi Girl beats to relax study to live",
-        "backupHandles": ["@ChillhopMusic"],
-        "defaultVid": "4t4AQ15yj1M"
-    },
-    {
-        "id": "chillhop-music",
-        "title": "Chillhop Essentials",
-        "subtitle": "Jazzy Beats • LIVE",
-        "handle": "@ChillhopMusic",
-        "searchQuery": "Chillhop Radio jazzy lofi hip hop beats live",
-        "backupHandles": ["@LofiGirl"],
-        "defaultVid": "jiua2V9q9V0"
-    },
-    {
-        "id": "cafe-jazz-tokyo",
-        "title": "Tokyo Cafe Jazz BGM",
-        "subtitle": "Cafe Music • LIVE",
-        "handle": "@CafeMusicBGMchannel",
-        "searchQuery": "Cafe Music BGM channel jazz live",
-        "backupHandles": ["@YellowBrickCinema"],
-        "defaultVid": "WMi37od24aw"
-    },
-    {
-        "id": "yellow-brick-cinema",
-        "title": "Deep Sleep & Relax Piano",
-        "subtitle": "Sleep & Meditation • LIVE",
-        "handle": "@YellowBrickCinema",
-        "searchQuery": "Yellow Brick Cinema relaxing sleep music live",
-        "backupHandles": ["@CafeMusicBGMchannel"],
-        "defaultVid": "ZQVu-nzhPT8"
-    },
-    {
-        "id": "nasa-space-live",
-        "title": "NASA Earth & Space Views",
-        "subtitle": "ISS Space Live • LIVE",
-        "handle": "@NASA",
-        "searchQuery": "NASA Live Earth from Space ISS",
-        "backupHandles": ["@SpaceVideos"],
-        "defaultVid": "ROboUHfPUrU"
-    },
-    {
-        "id": "aljazeera-english",
-        "title": "Al Jazeera English",
-        "subtitle": "Global News • LIVE",
-        "handle": "@AlJazeeraEnglish",
-        "searchQuery": "Al Jazeera English Live",
-        "backupHandles": ["@SkyNews"],
-        "defaultVid": "gCNeDWCI0vo"
-    },
-    {
-        "id": "sky-news-live",
-        "title": "Sky News UK & World",
-        "subtitle": "Breaking News • LIVE",
-        "handle": "@SkyNews",
-        "searchQuery": "Sky News Live",
-        "backupHandles": ["@euronews"],
-        "defaultVid": "umLWFz4izTM"
-    },
-    {
-        "id": "abc-news-live",
-        "title": "ABC News Live (USA)",
-        "subtitle": "US & World News • LIVE",
-        "handle": "@ABCNews",
-        "searchQuery": "ABC News Live 24/7",
-        "backupHandles": ["@SkyNews"],
-        "defaultVid": "8JK_3tFkXe0"
-    },
-    {
-        "id": "euronews-english",
-        "title": "Euronews English",
-        "subtitle": "European News • LIVE",
-        "handle": "@euronews",
-        "searchQuery": "Euronews English Live",
-        "backupHandles": ["@AlJazeeraEnglish"],
-        "defaultVid": "pykpO5kQJ98"
-    },
-    {
-        "id": "makkah-live",
-        "title": "Makkah Live & Al-Qur'an",
-        "subtitle": "Masjidil Haram • LIVE",
-        "handle": "@MakkahLiveHD",
-        "searchQuery": "Makkah Live HD Masjidil Haram",
-        "backupHandles": ["@HaramainInfo"],
-        "defaultVid": "HMOPLGDCUyM"
-    },
-    {
-        "id": "kompas-tv-live",
-        "title": "Kompas TV Berita 24 Jam",
-        "subtitle": "Berita Indonesia • LIVE",
-        "handle": "@kompastv",
-        "searchQuery": "LIVE STREAMING 24 JAM KOMPASTV",
-        "backupHandles": ["@CNNIndonesia"],
-        "defaultVid": "DOOrIxw5xOw"
-    }
-]
-
-VID_REGEX = re.compile(r"^[A-Za-z0-9_-]{11}$")
-CANONICAL_REGEX = re.compile(r'<link rel="canonical" href="https://www\.youtube\.com/watch\?v=([A-Za-z0-9_-]{11})"')
-OG_URL_REGEX = re.compile(r'<meta property="og:url" content="https://www\.youtube\.com/watch\?v=([A-Za-z0-9_-]{11})"')
-REDIRECT_REGEX = re.compile(r"watch\?v=([A-Za-z0-9_-]{11})")
-PLAYABILITY_STATUS_REGEX = re.compile(r'"playabilityStatus":\s*\{[^}]*?"status":\s*"([^"]+)"')
-
-USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
-COOKIE_HEADER = "SOCS=CAESEwgDEgk0ODE3Nzk3MjQaAmVuIAEaBgiA_LyaBg; CONSENT=YES+cb.20210328-17-p0.en+FX+; PREF=tz=UTC&hl=en"
+MAX_RUN_DURATION_SECONDS = 300.0
 
 
-def is_transient_failure(url, html):
-    url_lower = url.lower()
-    html_lower = html.lower()
-    if "consent.youtube.com" in url_lower or "consent.google.com" in url_lower or "before you continue to youtube" in html_lower:
-        return True, "Consent gate"
-    if "/sorry/index" in url_lower or 'action="captcharedirect"' in html_lower or 'id="captcha-form"' in html_lower:
-        return True, "CAPTCHA challenge"
-    if "our systems have detected unusual traffic" in html_lower:
-        return True, "Unusual traffic block"
-    if "ytInitialPlayerResponse" not in html and "ytInitialData" not in html:
-        return True, "Missing player data structures"
-    return False, ""
-
-
-def check_oembed(video_id):
-    url = f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={video_id}&format=json"
-    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+def atomic_write_json(filepath: str, data: dict):
+    """Write JSON atomically to a single file using a sibling temporary file + os.replace."""
+    parent = os.path.dirname(os.path.abspath(filepath))
+    os.makedirs(parent, exist_ok=True)
+    tmp_path = None
     try:
-        with urllib.request.urlopen(req, timeout=8) as resp:
-            return resp.status == 200
-    except Exception:
-        return False
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=parent,
+            prefix=f".{os.path.basename(filepath)}.",
+            suffix=".tmp",
+            delete=False,
+        ) as tmp:
+            tmp_path = tmp.name
+            json.dump(data, tmp, indent=2, ensure_ascii=False)
+            tmp.flush()
+            os.fsync(tmp.fileno())
+        os.replace(tmp_path, filepath)
+        tmp_path = None
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass
 
 
-def check_thumbnail(video_id):
-    url = f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg"
-    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    try:
-        with urllib.request.urlopen(req, timeout=8) as resp:
-            return resp.status == 200
-    except Exception:
-        return False
+def find_live_id_for_station(
+    item: StationSpec,
+    used_vids: set,
+    *,
+    verify_fn=verify_video_is_live,
+    search_fn=search_innertube_live,
+    cache=None,
+    **req_kwargs,
+):
+    """Try approved resolvers and channel-restricted search for an existing station."""
+    allowed_ids = list(item.allowed_channel_ids)
+    if not allowed_ids:
+        return False, None, None, "Station has no allowedChannelIds configured"
 
+    if item.preferred_vid and item.preferred_vid not in used_vids:
+        res = verify_fn(item.preferred_vid, allowed_channel_ids=allowed_ids, cache=cache, **req_kwargs)
+        if res.status == STATUS_LIVE:
+            return True, item.preferred_vid, res, f"OK (preferredVid {item.preferred_vid})"
+        print(f"  [INFO] preferredVid {item.preferred_vid} rejected ({res.reason}), trying resolvers", flush=True)
 
-def verify_video_is_live(video_id):
-    """
-    Strictly verify that a given 11-char videoId is currently LIVE and playable.
-    Returns (status: 'LIVE' | 'DEAD' | 'TRANSIENT', reason: str)
-    """
-    if not video_id or not VID_REGEX.match(video_id):
-        return "DEAD", "Invalid videoId format"
+    handles = [item.handle] + list(item.backup_handles)
+    tried_vids = set()
 
-    # 1. Check Innertube player API (works even when watch HTML is stripped on datacenter IPs)
-    player_is_live = None
-    player_reason = ""
-    try:
-        url = "https://www.youtube.com/youtubei/v1/player?prettyPrint=false"
-        payload = {
-            "context": {
-                "client": {
-                    "clientName": "WEB",
-                    "clientVersion": "2.20250101.01.00",
-                    "hl": "en",
-                    "gl": "US"
-                }
-            },
-            "videoId": video_id
-        }
-        req = urllib.request.Request(
-            url,
-            data=json.dumps(payload).encode("utf-8"),
-            headers={"Content-Type": "application/json", "User-Agent": USER_AGENT}
-        )
-        with urllib.request.urlopen(req, timeout=8) as resp:
-            data = json.load(resp)
-        vd = data.get("videoDetails", {})
-        ps = data.get("playabilityStatus", {}).get("status", "")
-        if ps == "ERROR":
-            return "DEAD", f"Player status {ps}"
-        if "isLive" in vd:
-            player_is_live = bool(vd.get("isLive"))
-            if not player_is_live:
-                return "DEAD", "Stream has ended (videoDetails.isLive=False)"
-        # Note: ps == "LOGIN_REQUIRED" is a datacenter IP bot-check on /player,
-        # NOT a dead stream; fall through to Innertube /next & watch HTML.
-    except Exception as e:
-        player_reason = str(e)
-
-    # 1b. Check Innertube /next API (works reliably on datacenter IPs without LOGIN_REQUIRED)
-    try:
-        next_url = "https://www.youtube.com/youtubei/v1/next?prettyPrint=false"
-        next_payload = {
-            "context": {
-                "client": {
-                    "clientName": "WEB",
-                    "clientVersion": "2.20250101.01.00",
-                    "hl": "en",
-                    "gl": "US"
-                }
-            },
-            "videoId": video_id
-        }
-        next_req = urllib.request.Request(
-            next_url,
-            data=json.dumps(next_payload).encode("utf-8"),
-            headers={"Content-Type": "application/json", "User-Agent": USER_AGENT}
-        )
-        with urllib.request.urlopen(next_req, timeout=8) as resp:
-            next_txt = resp.read().decode("utf-8", errors="ignore")
-        next_lower = next_txt.lower()
-        if '"islive":true' in next_lower or "watching now" in next_lower:
-            if check_oembed(video_id) and check_thumbnail(video_id):
-                return "LIVE", "OK (verified via Innertube next + oEmbed)"
-            return "DEAD", "oEmbed or thumbnail check failed"
-        if "streamed live" in next_lower or '"islive":false' in next_lower:
-            return "DEAD", "Stream has ended (Innertube next)"
-    except Exception as e:
-        if not player_reason:
-            player_reason = str(e)
-
-    # 2. Check watch HTML for isLiveNow & playabilityStatus
-    try:
-        watch_url = f"https://www.youtube.com/watch?v={video_id}"
-        req = urllib.request.Request(watch_url, headers={
-            "User-Agent": USER_AGENT,
-            "Accept-Language": "en-US,en;q=0.9",
-            "Cookie": COOKIE_HEADER,
-            "Cache-Control": "no-cache"
-        })
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            final_url = resp.geturl()
-            html = resp.read(1024 * 1024).decode("utf-8", errors="ignore")
-
-        is_trans, trans_reason = is_transient_failure(final_url, html)
-        if not is_trans:
-            has_live_now = ('"isLiveNow":true' in html) or ('"isLiveNow": true' in html)
-            has_upcoming = ('"isUpcoming":true' in html) or ('"isUpcoming": true' in html)
-            has_offline = ("LIVE_STREAM_OFFLINE" in html)
-            m_play = PLAYABILITY_STATUS_REGEX.search(html)
-            play_status = m_play.group(1) if m_play else ""
-
-            if has_upcoming or has_offline or not has_live_now:
-                return "DEAD", "Watch page indicates stream is not live (ended/upcoming/offline)"
-            if play_status and play_status != "OK":
-                return "DEAD", f"playabilityStatus={play_status}"
-            if check_oembed(video_id) and check_thumbnail(video_id):
-                return "LIVE", "OK"
-            return "DEAD", "oEmbed or thumbnail check failed"
-    except urllib.error.HTTPError as e:
-        if e.code in (404, 410):
-            return "DEAD", f"HTTP {e.code}"
-    except Exception:
-        pass
-
-    # If watch HTML hit a transient gate on CI, trust player_is_live + oEmbed + thumbnail
-    if player_is_live is True and check_oembed(video_id) and check_thumbnail(video_id):
-        return "LIVE", "OK (verified via Innertube player + oEmbed)"
-
-    return "TRANSIENT", player_reason or "Transient verification failure"
-
-
-def resolve_via_innertube_url(handle):
-    """Method 1: Resolve /@handle/live via Innertube navigation/resolve_url JSON API."""
-    url = "https://www.youtube.com/youtubei/v1/navigation/resolve_url?prettyPrint=false"
-    payload = {
-        "context": {
-            "client": {
-                "clientName": "WEB",
-                "clientVersion": "2.20250101.01.00",
-                "hl": "en",
-                "gl": "US"
-            }
-        },
-        "url": f"https://www.youtube.com/{handle}/live"
-    }
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json", "User-Agent": USER_AGENT}
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=8) as resp:
-            data = json.load(resp)
-            vid = data.get("endpoint", {}).get("watchEndpoint", {}).get("videoId")
-            if vid and VID_REGEX.match(vid):
-                return vid
-    except Exception:
-        pass
-    return None
-
-
-def resolve_via_html(handle):
-    """Method 2: Fetch /@handle/live and /@handle/streams HTML."""
-    for suffix in ("live", "streams"):
-        url = f"https://www.youtube.com/{handle}/{suffix}"
-        req = urllib.request.Request(url, headers={
-            "User-Agent": USER_AGENT,
-            "Accept-Language": "en-US,en;q=0.9",
-            "Cookie": COOKIE_HEADER,
-            "Cache-Control": "no-cache"
-        })
-        try:
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                final_url = resp.geturl()
-                html = resp.read(1024 * 1024).decode("utf-8", errors="ignore")
-            is_trans, _ = is_transient_failure(final_url, html)
-            if is_trans:
-                continue
-            if suffix == "live":
-                for rx in (CANONICAL_REGEX, OG_URL_REGEX):
-                    m = rx.search(html)
-                    if m:
-                        return m.group(1)
-                m_f = REDIRECT_REGEX.search(final_url)
-                if m_f:
-                    return m_f.group(1)
-            else:
-                # Look for live badge near videoId in /streams
-                matches = re.findall(r'"videoId":"([A-Za-z0-9_-]{11})".{0,1500}?"BADGE_STYLE_TYPE_LIVE_NOW"', html)
-                if matches:
-                    return matches[0]
-        except Exception:
-            continue
-    return None
-
-
-def resolve_via_ytdlp(handle):
-    """Method 3: Use yt-dlp --get-id if installed in environment (e.g. GitHub Actions)."""
-    if not shutil.which("yt-dlp"):
-        return None
-    try:
-        proc = subprocess.run(
-            ["yt-dlp", "--get-id", "--no-playlist", "--no-warnings", f"https://www.youtube.com/{handle}/live"],
-            capture_output=True,
-            text=True,
-            timeout=15
-        )
-        if proc.returncode == 0:
-            vid = proc.stdout.strip().splitlines()[0].strip()
-            if VID_REGEX.match(vid):
-                return vid
-    except Exception:
-        pass
-    return None
-
-
-def resolve_via_search(query):
-    """Method 4: Innertube search with Live filter (EgJAAQ%3D%3D)."""
-    if not query:
-        return []
-    url = "https://www.youtube.com/youtubei/v1/search?prettyPrint=false"
-    payload = {
-        "context": {
-            "client": {
-                "clientName": "WEB",
-                "clientVersion": "2.20250101.01.00",
-                "hl": "en",
-                "gl": "US"
-            }
-        },
-        "query": query,
-        "params": "EgJAAQ%3D%3D"
-    }
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json", "User-Agent": USER_AGENT}
-    )
-    candidates = []
-    try:
-        with urllib.request.urlopen(req, timeout=8) as resp:
-            data = json.load(resp)
-        contents = data.get("contents", {}).get("twoColumnSearchResultsRenderer", {}).get("primaryContents", {}).get("sectionListRenderer", {}).get("contents", [])
-        for sec in contents:
-            for it in sec.get("itemSectionRenderer", {}).get("contents", []):
-                vr = it.get("videoRenderer")
-                if not vr:
-                    continue
-                vid = vr.get("videoId")
-                badges = str(vr.get("badges", [])) + str(vr.get("thumbnailOverlays", []))
-                if vid and VID_REGEX.match(vid) and "LIVE" in badges:
-                    candidates.append(vid)
-                    if len(candidates) >= 3:
-                        return candidates
-    except Exception:
-        pass
-    return candidates
-
-
-def find_live_id_for_station(item, used_vids):
-    """Try all resolution methods for a station and return (success, vid, reason)."""
-    pref = item.get("preferredVid")
-    if pref and pref not in used_vids:
-        status, reason = verify_video_is_live(pref)
-        if status == "LIVE":
-            return True, pref, f"OK (preferredVid {pref})"
-        print(f"  [INFO] preferredVid {pref} not live ({reason}), falling back to resolvers", flush=True)
-
-    handles = [item["handle"]] + item.get("backupHandles", [])
-
-    # 1. Try handle-based resolvers first (most accurate for exact channel)
     for h in handles:
-        candidates = []
         for resolver_name, resolver_fn in (
-            ("Innertube resolve_url", resolve_via_innertube_url),
-            ("HTML /live+/streams", resolve_via_html),
+            ("Innertube resolve_url", lambda handle: resolve_via_innertube_url(handle, **req_kwargs)),
+            ("HTML /live+/streams", lambda handle: resolve_via_html(handle, lambda u, ht: is_transient_html_gate(u, ht)[0], **req_kwargs)),
             ("yt-dlp", resolve_via_ytdlp),
         ):
             vid = resolver_fn(h)
-            if vid and vid not in candidates and vid not in used_vids:
-                candidates.append(vid)
-                status, reason = verify_video_is_live(vid)
-                if status == "LIVE":
-                    return True, vid, f"OK ({h} via {resolver_name})"
-                else:
-                    print(f"  [INFO] {h} candidate {vid} via {resolver_name} rejected: {reason}", flush=True)
+            if vid and vid not in tried_vids and vid not in used_vids:
+                tried_vids.add(vid)
+                res = verify_fn(vid, allowed_channel_ids=allowed_ids, cache=cache, **req_kwargs)
+                if res.status == STATUS_LIVE:
+                    return True, vid, res, f"OK ({h} via {resolver_name})"
+                print(f"  [INFO] {h} candidate {vid} via {resolver_name} rejected: {res.reason}", flush=True)
 
-    # 2. Fallback to Innertube Live Search for the station
-    search_q = item.get("searchQuery")
-    if search_q:
-        for vid in resolve_via_search(search_q):
-            if vid in used_vids:
-                continue
-            status, reason = verify_video_is_live(vid)
-            if status == "LIVE":
-                return True, vid, "OK (via Live Search)"
+    if item.search_query:
+        page_res = search_fn(
+            item.search_query,
+            allowed_channel_ids=allowed_ids,
+            max_pages=2,
+            max_candidates=5,
+            **req_kwargs,
+        )
+        if page_res.ok:
+            for cand in page_res.items:
+                if cand.video_id in used_vids or cand.video_id in tried_vids:
+                    continue
+                tried_vids.add(cand.video_id)
+                res = verify_fn(cand.video_id, allowed_channel_ids=allowed_ids, cache=cache, **req_kwargs)
+                if res.status == STATUS_LIVE:
+                    return True, cand.video_id, res, "OK (via channel-filtered Live Search)"
+        else:
+            print(f"  [WARN] Search provider failed for {item.id}: {page_res.error_msg}", flush=True)
 
-    return False, None, "All live resolution methods returned no active live stream"
+    return False, None, None, "No active LIVE stream found from approved channels"
 
 
-def load_existing_video_ids():
-    target = CONFIG_FILES[0]
-    if os.path.exists(target):
+def load_existing_video_ids(config_path: str) -> dict:
+    if config_path and os.path.exists(config_path):
         try:
-            with open(target, "r", encoding="utf-8") as f:
+            with open(config_path, "r", encoding="utf-8") as f:
                 cfg = json.load(f)
-            return {st["id"]: st.get("videoId") for st in cfg.get("radioStations", []) if "id" in st}
+            return {
+                st["id"]: st.get("videoId")
+                for st in cfg.get("radioStations", [])
+                if isinstance(st, dict) and isinstance(st.get("id"), str)
+            }
         except Exception as e:
-            print(f"[WARN] Failed to load existing video IDs from {target}: {e}", flush=True)
+            print(f"[WARN] Failed to load existing video IDs from {config_path}: {e}", flush=True)
     return {}
 
 
-def load_status_registry():
-    if os.path.exists(STATUS_REGISTRY):
+def load_status_registry(registry_path: str = STATUS_REGISTRY) -> dict:
+    if os.path.exists(registry_path):
         try:
-            with open(STATUS_REGISTRY, "r", encoding="utf-8") as f:
-                return json.load(f)
+            with open(registry_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if isinstance(data, dict):
+                data.setdefault("stations", {})
+                return data
         except Exception as e:
-            print(f"[WARN] Failed to read {STATUS_REGISTRY}: {e}", flush=True)
-    return {"lastUpdated": None, "stations": {}}
+            print(f"[WARN] Failed to read {registry_path}: {e}", flush=True)
+    return {"schemaVersion": TELEMETRY_SCHEMA_VERSION, "lastUpdated": None, "stations": {}}
+
+
+def _station_entry(item: StationSpec, vid: str) -> dict:
+    return {
+        "id": item.id,
+        "title": item.title,
+        "subtitle": item.subtitle,
+        "thumbnail": f"https://i.ytimg.com/vi/{vid}/hqdefault.jpg",
+        "videoId": vid,
+    }
+
+
+def _coerce_station(raw) -> StationSpec:
+    if isinstance(raw, StationSpec):
+        return raw
+    return StationSpec(
+        id=raw["id"],
+        title=raw["title"],
+        subtitle=raw["subtitle"],
+        category=raw.get("category", "general"),
+        handle=raw["handle"],
+        allowed_channel_ids=list(raw.get("allowedChannelIds") or raw.get("allowed_channel_ids") or []),
+        search_query=raw.get("searchQuery") or raw.get("search_query", ""),
+        backup_handles=list(raw.get("backupHandles") or raw.get("backup_handles") or []),
+        preferred_vid=raw.get("preferredVid") or raw.get("preferred_vid"),
+        default_vid=raw.get("defaultVid") or raw.get("default_vid"),
+        enabled=raw.get("enabled", True),
+    )
+
+
+def run_sync(
+    *,
+    dry_run: bool = False,
+    config_files=None,
+    status_registry_path: str = STATUS_REGISTRY,
+    stations=None,
+    now_fn=None,
+    sleep_fn=time.sleep,
+    clock_fn=time.monotonic,
+    rand_fn=random.uniform,
+    opener=urllib.request.urlopen,
+    verify_fn=verify_video_is_live,
+    find_fn=find_live_id_for_station,
+    search_fn=search_innertube_live,
+) -> int:
+    """
+    Execute balanced 6-hour auto-heal radio synchronization.
+    Returns 0 on valid publication (including valid 0..7 station lists),
+    or 1 on internal/read/validation/write failure.
+    """
+    config_files = list(config_files or CONFIG_FILES)
+    catalog = [_coerce_station(s) for s in (stations if stations is not None else STATION_CATALOG)]
+    now_utc = (now_fn() if now_fn else datetime.now(timezone.utc)).astimezone(timezone.utc)
+    now_iso = now_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+    deadline_ts = clock_fn() + MAX_RUN_DURATION_SECONDS
+
+    if dry_run:
+        print("=== DRY RUN MODE: No files will be modified ===", flush=True)
+    print("Starting Balanced Auto-Heal Live Radio Synchronization (6h grace policy)...", flush=True)
+
+    existing_vids = load_existing_video_ids(config_files[0] if config_files else "")
+    status_data = load_status_registry(status_registry_path)
+    status_data["schemaVersion"] = TELEMETRY_SCHEMA_VERSION
+    station_records = status_data.setdefault("stations", {})
+
+    verification_cache = {}
+    req_kwargs = {
+        "opener": opener,
+        "sleep_fn": sleep_fn,
+        "clock_fn": clock_fn,
+        "rand_fn": rand_fn,
+        "deadline_ts": deadline_ts,
+    }
+
+    selected_candidates = []  # (StationSpec, vid, is_new_or_live_checked, reason, ver_result)
+    used_vids = set()
+    summary_rows = []
+    transient_categories = []
+    counts = {"LIVE": 0, "FALLBACK": 0, "OFFLINE": 0, "TRANSIENT_EXCLUDED": 0, "DISABLED": 0}
+
+    for item in catalog:
+        st_id = item.id
+        record = dict(station_records.get(st_id, {}))
+
+        if not item.enabled:
+            record["lastChecked"] = now_iso
+            record["verificationState"] = STATUS_DISABLED
+            record["lastStatus"] = "DISABLED in station catalog"
+            station_records[st_id] = record
+            counts["DISABLED"] += 1
+            summary_rows.append((st_id, existing_vids.get(st_id), "-", STATUS_DISABLED, "Disabled in catalog"))
+            continue
+
+        cfg_vid = existing_vids.get(st_id)
+        allowed_ids = list(item.allowed_channel_ids)
+        print(f"\nResolving [{st_id}] ({item.handle})...", flush=True)
+
+        success, candidate_vid, ver_res, reason = find_fn(
+            item,
+            used_vids,
+            verify_fn=verify_fn,
+            search_fn=search_fn,
+            cache=verification_cache,
+            **req_kwargs,
+        )
+        sleep_fn(rand_fn(0.2, 0.5))
+
+        if success and candidate_vid:
+            used_vids.add(candidate_vid)
+            selected_candidates.append((item, candidate_vid, True, reason, ver_res))
+            continue
+
+        # No new LIVE stream found; evaluate existing config videoId (never unverified defaultVid)
+        if is_valid_video_id(cfg_vid) and cfg_vid not in used_vids:
+            ex_res = verify_fn(cfg_vid, allowed_channel_ids=allowed_ids, cache=verification_cache, **req_kwargs)
+        else:
+            ex_res = VerificationResult(
+                STATUS_OFFLINE,
+                "Missing, invalid, or duplicate existing videoId",
+                category="invalid_input",
+                video_id=str(cfg_vid or ""),
+            )
+
+        if ex_res.status == STATUS_LIVE:
+            used_vids.add(cfg_vid)
+            selected_candidates.append((item, cfg_vid, True, f"KEPT_LIVE: {ex_res.reason}", ex_res))
+        elif ex_res.status == STATUS_OFFLINE:
+            record["consecutiveFailures"] = int(record.get("consecutiveFailures") or 0) + 1
+            record["lastChecked"] = now_iso
+            record["lastFailureCategory"] = ex_res.category
+            record["lastStatus"] = f"OFFLINE: {ex_res.reason}"
+            record["verificationState"] = STATUS_OFFLINE
+            station_records[st_id] = record
+            counts["OFFLINE"] += 1
+            summary_rows.append((st_id, cfg_vid, "-", STATUS_OFFLINE, record["lastStatus"]))
+            print(f"  ✗ Confirmed OFFLINE ({ex_res.reason}). Excluded.", flush=True)
+        else:
+            transient_categories.append(ex_res.category)
+            eligible, age_hours, fb_reason = evaluate_fallback_eligibility(
+                cfg_vid, record, allowed_ids, now_utc, grace_hours=TRANSIENT_GRACE_HOURS
+            )
+            record["consecutiveFailures"] = int(record.get("consecutiveFailures") or 0) + 1
+            record["lastChecked"] = now_iso
+            record["lastFailureCategory"] = ex_res.category
+
+            if eligible:
+                used_vids.add(cfg_vid)
+                record["lastStatus"] = f"TRANSIENT_FALLBACK ({age_hours:.1f}h/{TRANSIENT_GRACE_HOURS:.0f}h): {ex_res.reason}"
+                record["verificationState"] = "TRANSIENT_FALLBACK"
+                # IMPORTANT: Never update lastVerified when keeping fallback!
+                station_records[st_id] = record
+                selected_candidates.append((item, cfg_vid, False, record["lastStatus"], ex_res))
+                counts["FALLBACK"] += 1
+                summary_rows.append((st_id, cfg_vid, cfg_vid, "FALLBACK", record["lastStatus"]))
+                print(f"  ⚠ Transient ({ex_res.reason}). Kept verified fallback ({age_hours:.1f}h/6h).", flush=True)
+            else:
+                record["lastStatus"] = f"EXCLUDED_TRANSIENT ({fb_reason}): {ex_res.reason}"
+                record["verificationState"] = STATUS_TRANSIENT
+                station_records[st_id] = record
+                counts["TRANSIENT_EXCLUDED"] += 1
+                summary_rows.append((st_id, cfg_vid, "-", "TRANSIENT", record["lastStatus"]))
+                print(f"  ✗ Transient excluded ({fb_reason}).", flush=True)
+
+    # Pre-publication re-verification (force_refresh=True) for all LIVE candidates
+    active_stations = []
+    for item, vid, needs_recheck, reason, prev_res in selected_candidates:
+        st_id = item.id
+        old_vid = existing_vids.get(st_id)
+        record = dict(station_records.get(st_id, {}))
+
+        if not needs_recheck:
+            active_stations.append(_station_entry(item, vid))
+            continue
+
+        recheck = verify_fn(
+            vid,
+            allowed_channel_ids=list(item.allowed_channel_ids),
+            cache=verification_cache,
+            force_refresh=True,
+            **req_kwargs,
+        )
+        if recheck.status == STATUS_LIVE:
+            record["verificationVersion"] = TELEMETRY_SCHEMA_VERSION
+            record["lastVerified"] = now_iso
+            record["lastGoodVideoId"] = vid
+            record["verifiedChannelId"] = recheck.channel_id or (prev_res.channel_id if prev_res else "")
+            record["lastStatus"] = reason
+            record["lastFailureCategory"] = ""
+            record["consecutiveFailures"] = 0
+            record["lastChecked"] = now_iso
+            record["verificationState"] = STATUS_LIVE
+            station_records[st_id] = record
+            active_stations.append(_station_entry(item, vid))
+            counts["LIVE"] += 1
+            summary_rows.append((st_id, old_vid, vid, STATUS_LIVE, reason))
+            print(f"  ✓ Verified LIVE (re-checked): {vid} ({reason})", flush=True)
+        elif recheck.status == STATUS_TRANSIENT and vid == old_vid:
+            transient_categories.append(recheck.category)
+            eligible, age_hours, fb_reason = evaluate_fallback_eligibility(
+                vid, record, list(item.allowed_channel_ids), now_utc, grace_hours=TRANSIENT_GRACE_HOURS
+            )
+            record["consecutiveFailures"] = int(record.get("consecutiveFailures") or 0) + 1
+            record["lastChecked"] = now_iso
+            record["lastFailureCategory"] = recheck.category
+            if eligible:
+                record["lastStatus"] = f"TRANSIENT_FALLBACK ({age_hours:.1f}h/{TRANSIENT_GRACE_HOURS:.0f}h): {recheck.reason}"
+                record["verificationState"] = "TRANSIENT_FALLBACK"
+                station_records[st_id] = record
+                active_stations.append(_station_entry(item, vid))
+                counts["FALLBACK"] += 1
+                summary_rows.append((st_id, old_vid, vid, "FALLBACK", record["lastStatus"]))
+            else:
+                record["lastStatus"] = f"REJECTED_PREPUBLISH ({fb_reason}): {recheck.reason}"
+                record["verificationState"] = STATUS_TRANSIENT
+                station_records[st_id] = record
+                counts["TRANSIENT_EXCLUDED"] += 1
+                summary_rows.append((st_id, old_vid, "-", "TRANSIENT", record["lastStatus"]))
+        else:
+            record["consecutiveFailures"] = int(record.get("consecutiveFailures") or 0) + 1
+            record["lastChecked"] = now_iso
+            record["lastFailureCategory"] = recheck.category
+            record["lastStatus"] = f"REJECTED_PREPUBLISH ({recheck.status}): {recheck.reason}"
+            record["verificationState"] = recheck.status
+            station_records[st_id] = record
+            if recheck.status == STATUS_OFFLINE:
+                counts["OFFLINE"] += 1
+            else:
+                counts["TRANSIENT_EXCLUDED"] += 1
+            summary_rows.append((st_id, old_vid, "-", recheck.status, record["lastStatus"]))
+            print(f"  ✗ Pre-publish re-check failed for {vid}: {recheck.reason}", flush=True)
+
+    enabled_total = sum(1 for s in catalog if s.enabled)
+    provider_degraded = detect_provider_degradation(transient_categories, enabled_total)
+    status_data["providerDegraded"] = provider_degraded
+
+    print("\n" + "=" * 120, flush=True)
+    print(f"{'STATION ID':<22} | {'OLD VIDEO ID':<13} | {'NEW VIDEO ID':<13} | {'STATUS':<9} | {'REASON'}", flush=True)
+    print("=" * 120, flush=True)
+    for sid, old_v, new_v, status_val, rsn in summary_rows:
+        print(f"{sid:<22} | {str(old_v):<13} | {str(new_v):<13} | {status_val:<9} | {rsn}", flush=True)
+    print("=" * 120, flush=True)
+    print(
+        f"Summary -> Active: {len(active_stations)}/{enabled_total} | "
+        f"LIVE: {counts['LIVE']} | FALLBACK: {counts['FALLBACK']} | "
+        f"OFFLINE: {counts['OFFLINE']} | TRANSIENT_EXCLUDED: {counts['TRANSIENT_EXCLUDED']} | "
+        f"DISABLED: {counts['DISABLED']} | providerDegraded: {provider_degraded}",
+        flush=True,
+    )
+
+    if len(active_stations) < OPERATIONAL_LOW_STATION_THRESHOLD:
+        print(
+            f"[WARN] Operational alert: active station count ({len(active_stations)}) "
+            f"< {OPERATIONAL_LOW_STATION_THRESHOLD}. Publishing valid verified/fallback output without reviving dead streams.",
+            flush=True,
+        )
+
+    # Prepare and validate ALL candidate configs in memory BEFORE writing any file
+    prepared_configs = []
+    for cfg_path in config_files:
+        if not os.path.exists(cfg_path):
+            print(f"[ERROR] Required config file missing: {cfg_path}", flush=True)
+            return 1
+        try:
+            with open(cfg_path, "rb") as f:
+                original_bytes = f.read()
+            cfg = json.loads(original_bytes.decode("utf-8"))
+        except Exception as e:
+            print(f"[ERROR] Failed to read/parse {cfg_path}: {e}", flush=True)
+            return 1
+
+        if not isinstance(cfg, dict):
+            print(f"[ERROR] {cfg_path} root must be a JSON object", flush=True)
+            return 1
+
+        # Preserve promos and all other non-radio fields!
+        cfg["radioStations"] = active_stations
+        ok, errors, warnings = validate_config_data(cfg, label=cfg_path, require_min_stations=False)
+        for warn in warnings:
+            print(f"  [WARN] {warn}", flush=True)
+        if not ok:
+            print(f"[ERROR] Candidate validation failed for {cfg_path}:", flush=True)
+            for err in errors:
+                print(f"  - {err}", flush=True)
+            return 1
+        prepared_configs.append((cfg_path, original_bytes, cfg))
+
+    if dry_run:
+        print("[DRY RUN] Candidate configs validated in memory. Zero files modified.", flush=True)
+        return 0
+
+    # Publish per-file atomically; rollback already-updated configs on partial failure
+    written_backups = []
+    try:
+        for cfg_path, original_bytes, cfg_dict in prepared_configs:
+            atomic_write_json(cfg_path, cfg_dict)
+            written_backups.append((cfg_path, original_bytes))
+            print(f"Successfully updated {cfg_path} with {len(active_stations)} stations.", flush=True)
+    except Exception as e:
+        print(f"[ERROR] Publication failed: {e}", flush=True)
+        for prev_path, prev_bytes in reversed(written_backups):
+            try:
+                atomic_write_json(prev_path, json.loads(prev_bytes.decode("utf-8")))
+                print(f"[ROLLBACK] Restored {prev_path}", flush=True)
+            except Exception as rb_err:
+                print(f"[ERROR] Rollback failed for {prev_path}: {rb_err}", flush=True)
+        return 1
+
+    # Record publication & telemetry ONLY after config publication succeeds
+    status_data["lastUpdated"] = now_iso
+    status_data["lastPublished"] = now_iso
+    status_data["lastPublishedCount"] = len(active_stations)
+    try:
+        atomic_write_json(status_registry_path, status_data)
+        print(f"Saved diagnostic telemetry to {status_registry_path}", flush=True)
+    except Exception as e:
+        print(f"[ERROR] Failed to write telemetry {status_registry_path}: {e}", flush=True)
+        return 1
+
+    print("\nSynchronization completed successfully.", flush=True)
+    return 0
 
 
 def main():
-    dry_run = "--dry-run" in sys.argv
-    if dry_run:
-        print("=== DRY RUN MODE: No files will be modified ===", flush=True)
+    parser = argparse.ArgumentParser(description="HiFi Live Radio Sync & Discovery")
+    parser.add_argument("--dry-run", action="store_true", help="Run without writing any files")
+    parser.add_argument(
+        "--mode",
+        choices=("health-check", "discovery"),
+        default="health-check",
+        help="health-check (default) or broad discovery",
+    )
+    args = parser.parse_args()
 
-    print("Starting Hardened Auto-Heal Live Radio Synchronization...", flush=True)
-
-    existing_vids = load_existing_video_ids()
-    status_data = load_status_registry()
-    station_records = status_data.setdefault("stations", {})
-
-    now_utc = datetime.now(timezone.utc)
-    now_iso = now_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
-
-    active_stations = []
-    used_vids = set()
-    summary_rows = []
-
-    for item in STATION_CHANNELS:
-        st_id = item["id"]
-        current_cfg_vid = existing_vids.get(st_id) or item.get("defaultVid")
-        record = station_records.get(st_id, {})
-
-        print(f"\nResolving [{st_id}] ({item['handle']})...", flush=True)
-        success, candidate_vid, reason = find_live_id_for_station(item, used_vids)
-        time.sleep(random.uniform(0.5, 1.0))
-
-        if success:
-            used_vids.add(candidate_vid)
-            record["lastVerified"] = now_iso
-            record["lastGoodVideoId"] = candidate_vid
-            record["lastStatus"] = reason
-            record["consecutiveFailures"] = 0
-            record["lastChecked"] = now_iso
-            station_records[st_id] = record
-
-            active_stations.append({
-                "id": st_id,
-                "title": item["title"],
-                "subtitle": item["subtitle"],
-                "thumbnail": f"https://i.ytimg.com/vi/{candidate_vid}/hqdefault.jpg",
-                "videoId": candidate_vid
-            })
-            summary_rows.append((st_id, current_cfg_vid, candidate_vid, "PASS", reason))
-            print(f"  ✓ Verified LIVE: {candidate_vid} ({reason})", flush=True)
-
-        else:
-            # Explicitly check whether the existing videoId is STILL live or confirmed dead
-            existing_status, existing_reason = (
-                verify_video_is_live(current_cfg_vid)
-                if current_cfg_vid and current_cfg_vid not in used_vids
-                else ("DEAD", "Duplicate or missing ID")
-            )
-
-            if existing_status == "LIVE":
-                used_vids.add(current_cfg_vid)
-                record["lastVerified"] = now_iso
-                record["lastGoodVideoId"] = current_cfg_vid
-                record["lastStatus"] = f"KEPT_LIVE: Existing stream still live ({existing_reason})"
-                record["consecutiveFailures"] = 0
-                record["lastChecked"] = now_iso
-                station_records[st_id] = record
-
-                active_stations.append({
-                    "id": st_id,
-                    "title": item["title"],
-                    "subtitle": item["subtitle"],
-                    "thumbnail": f"https://i.ytimg.com/vi/{current_cfg_vid}/hqdefault.jpg",
-                    "videoId": current_cfg_vid
-                })
-                summary_rows.append((st_id, current_cfg_vid, current_cfg_vid, "PASS", "Existing stream verified LIVE"))
-                print(f"  ✓ Existing videoId still LIVE: {current_cfg_vid}", flush=True)
-
-            elif existing_status == "DEAD":
-                # Confirmed dead! Do NOT keep dead streams in remote-config.json!
-                failures = record.get("consecutiveFailures", 0) + 1
-                record["consecutiveFailures"] = failures
-                record["lastChecked"] = now_iso
-                status_desc = f"PRUNED_DEAD: {existing_reason}"
-                record["lastStatus"] = status_desc
-                station_records[st_id] = record
-                summary_rows.append((st_id, current_cfg_vid, "-", "PRUNED", status_desc))
-                print(f"  ✗ Confirmed DEAD ({existing_reason}). Removed from active list!", flush=True)
-
-            else:
-                # Transient network failure: only keep up to TRANSIENT_STALE_HOURS (6h)
-                last_ver_str = record.get("lastVerified")
-                try:
-                    last_ver_dt = datetime.fromisoformat(last_ver_str.replace("Z", "+00:00")) if last_ver_str else now_utc
-                except Exception:
-                    last_ver_dt = now_utc
-
-                unverified_hours = (now_utc - last_ver_dt).total_seconds() / 3600.0
-                failures = record.get("consecutiveFailures", 0) + 1
-                record["consecutiveFailures"] = failures
-                record["lastChecked"] = now_iso
-
-                if unverified_hours > TRANSIENT_STALE_HOURS:
-                    status_desc = f"PRUNED_STALE ({unverified_hours:.1f}h/{TRANSIENT_STALE_HOURS}h): {reason}"
-                    record["lastStatus"] = status_desc
-                    station_records[st_id] = record
-                    summary_rows.append((st_id, current_cfg_vid, "-", "PRUNED", status_desc))
-                    print(f"  ✗ Pruned stale station ({unverified_hours:.1f}h).", flush=True)
-                else:
-                    used_vids.add(current_cfg_vid)
-                    status_desc = f"KEPT_TRANSIENT ({unverified_hours:.1f}h/{TRANSIENT_STALE_HOURS}h): {existing_reason}"
-                    record["lastStatus"] = status_desc
-                    station_records[st_id] = record
-
-                    active_stations.append({
-                        "id": st_id,
-                        "title": item["title"],
-                        "subtitle": item["subtitle"],
-                        "thumbnail": f"https://i.ytimg.com/vi/{current_cfg_vid}/hqdefault.jpg",
-                        "videoId": current_cfg_vid
-                    })
-                    summary_rows.append((st_id, current_cfg_vid, current_cfg_vid, "WARN", status_desc))
-                    print(f"  ⚠ Transient check ({existing_reason}). Kept temporarily ({unverified_hours:.1f}h).", flush=True)
-
-    print("\n" + "=" * 120, flush=True)
-    print(f"{'STATION ID':<22} | {'OLD VIDEO ID':<13} | {'NEW VIDEO ID':<13} | {'STATUS':<7} | {'REASON'}", flush=True)
-    print("=" * 120, flush=True)
-    for sid, old_v, new_v, status_val, rsn in summary_rows:
-        print(f"{sid:<22} | {str(old_v):<13} | {str(new_v):<13} | {status_val:<7} | {rsn}", flush=True)
-    print("=" * 120, flush=True)
-    print(f"Active Stations Count: {len(active_stations)} / {len(STATION_CHANNELS)}", flush=True)
-
-    if not dry_run:
-        status_data["lastUpdated"] = now_iso
-        os.makedirs(os.path.dirname(STATUS_REGISTRY), exist_ok=True)
-        with open(STATUS_REGISTRY, "w", encoding="utf-8") as f:
-            json.dump(status_data, f, indent=2, ensure_ascii=False)
-        print(f"Saved diagnostic telemetry to {STATUS_REGISTRY}", flush=True)
-
-        fdroid_promo = {
-            "id": f"fdroid-notice-{now_utc.strftime('%Y%m%d')}-{(now_utc.hour // 6) * 6:02d}",
-            "image": {},
-            "title": {
-                "id": "HiFi Menuju F-Droid! 🚀",
-                "in": "HiFi Menuju F-Droid! 🚀",
-                "en": "HiFi is Heading to F-Droid! 🚀"
-            },
-            "text": {
-                "id": "Kabar baik! Aplikasi HiFi saat ini sedang dalam proses pengajuan pendaftaran resmi di F-Droid agar kamu bisa mengunduh dan memperbarui aplikasi secara lebih aman, transparan, dan terverifikasi open-source. Terima kasih atas dukungan kamu!",
-                "in": "Kabar baik! Aplikasi HiFi saat ini sedang dalam proses pengajuan pendaftaran resmi di F-Droid agar kamu bisa mengunduh dan memperbarui aplikasi secara lebih aman, transparan, dan terverifikasi open-source. Terima kasih atas dukungan kamu!",
-                "en": "Good news! HiFi is currently undergoing the official submission process for F-Droid so you can install and update the app more safely and transparently as verified open-source software. Thank you for your support!"
-            },
-            "button": {},
-            "link": "https://github.com/saferill/HiFi"
-        }
-
-        for cfg_path in CONFIG_FILES:
-            if not os.path.exists(cfg_path):
-                continue
-            try:
-                with open(cfg_path, "r", encoding="utf-8") as f:
-                    cfg = json.load(f)
-                cfg["radioStations"] = active_stations
-                cfg["promos"] = [fdroid_promo]
-                with open(cfg_path, "w", encoding="utf-8") as f:
-                    json.dump(cfg, f, indent=2, ensure_ascii=False)
-                print(f"Successfully updated {cfg_path} with {len(active_stations)} stations.", flush=True)
-            except Exception as e:
-                print(f"[ERROR] Failed to update {cfg_path}: {e}", flush=True)
+    if args.mode == "discovery":
+        rc = run_discovery(
+            dry_run=args.dry_run,
+            registry_path=DISCOVERY_REGISTRY,
+            atomic_write_fn=atomic_write_json,
+        )
     else:
-        print("[DRY RUN] File write skipped.", flush=True)
-
-    if len(active_stations) == 0:
-        print("\n[CRITICAL] All stations failed validation or were pruned!", flush=True)
-        sys.exit(1)
-
-    print("\nSynchronization completed successfully.", flush=True)
-    sys.exit(0)
+        rc = run_sync(dry_run=args.dry_run)
+    sys.exit(rc)
 
 
 if __name__ == "__main__":
