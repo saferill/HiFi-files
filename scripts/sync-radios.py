@@ -657,6 +657,23 @@ def main():
             json.dump(status_data, f, indent=2, ensure_ascii=False)
         print(f"Saved diagnostic telemetry to {STATUS_REGISTRY}", flush=True)
 
+        fdroid_promo = {
+            "id": f"fdroid-notice-{now_utc.strftime('%Y%m%d')}-{(now_utc.hour // 6) * 6:02d}",
+            "image": {},
+            "title": {
+                "id": "HiFi Menuju F-Droid! 🚀",
+                "in": "HiFi Menuju F-Droid! 🚀",
+                "en": "HiFi is Heading to F-Droid! 🚀"
+            },
+            "text": {
+                "id": "Kabar baik! Aplikasi HiFi saat ini sedang dalam proses pengajuan pendaftaran resmi di F-Droid agar kamu bisa mengunduh dan memperbarui aplikasi secara lebih aman, transparan, dan terverifikasi open-source. Terima kasih atas dukungan kamu!",
+                "in": "Kabar baik! Aplikasi HiFi saat ini sedang dalam proses pengajuan pendaftaran resmi di F-Droid agar kamu bisa mengunduh dan memperbarui aplikasi secara lebih aman, transparan, dan terverifikasi open-source. Terima kasih atas dukungan kamu!",
+                "en": "Good news! HiFi is currently undergoing the official submission process for F-Droid so you can install and update the app more safely and transparently as verified open-source software. Thank you for your support!"
+            },
+            "button": {},
+            "link": ""
+        }
+
         for cfg_path in CONFIG_FILES:
             if not os.path.exists(cfg_path):
                 continue
@@ -664,6 +681,7 @@ def main():
                 with open(cfg_path, "r", encoding="utf-8") as f:
                     cfg = json.load(f)
                 cfg["radioStations"] = active_stations
+                cfg["promos"] = [fdroid_promo]
                 with open(cfg_path, "w", encoding="utf-8") as f:
                     json.dump(cfg, f, indent=2, ensure_ascii=False)
                 print(f"Successfully updated {cfg_path} with {len(active_stations)} stations.", flush=True)

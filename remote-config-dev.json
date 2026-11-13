@@ -78,8 +78,8 @@
       "id": "sky-news-live",
       "title": "Sky News UK & World",
       "subtitle": "Breaking News • LIVE",
-      "thumbnail": "https://i.ytimg.com/vi/umLWFz4izTM/hqdefault.jpg",
-      "videoId": "umLWFz4izTM"
+      "thumbnail": "https://i.ytimg.com/vi/xMboXwD4MJs/hqdefault.jpg",
+      "videoId": "xMboXwD4MJs"
     },
     {
       "id": "abc-news-live",
@@ -92,8 +92,8 @@
       "id": "euronews-english",
       "title": "Euronews English",
       "subtitle": "European News • LIVE",
-      "thumbnail": "https://i.ytimg.com/vi/pykpO5kQJ98/hqdefault.jpg",
-      "videoId": "pykpO5kQJ98"
+      "thumbnail": "https://i.ytimg.com/vi/abtPlpFzLiM/hqdefault.jpg",
+      "videoId": "abtPlpFzLiM"
     },
     {
       "id": "makkah-live",
@@ -106,9 +106,26 @@
       "id": "kompas-tv-live",
       "title": "Kompas TV Berita 24 Jam",
       "subtitle": "Berita Indonesia • LIVE",
-      "thumbnail": "https://i.ytimg.com/vi/DOOrIxw5xOw/hqdefault.jpg",
-      "videoId": "DOOrIxw5xOw"
+      "thumbnail": "https://i.ytimg.com/vi/-m_SSRMqUr0/hqdefault.jpg",
+      "videoId": "-m_SSRMqUr0"
     }
   ],
-  "promos": []
+  "promos": [
+    {
+      "id": "fdroid-notice-20261113-06",
+      "image": {},
+      "title": {
+        "id": "HiFi Menuju F-Droid! 🚀",
+        "in": "HiFi Menuju F-Droid! 🚀",
+        "en": "HiFi is Heading to F-Droid! 🚀"
+      },
+      "text": {
+        "id": "Kabar baik! Aplikasi HiFi saat ini sedang dalam proses pengajuan pendaftaran resmi di F-Droid agar kamu bisa mengunduh dan memperbarui aplikasi secara lebih aman, transparan, dan terverifikasi open-source. Terima kasih atas dukungan kamu!",
+        "in": "Kabar baik! Aplikasi HiFi saat ini sedang dalam proses pengajuan pendaftaran resmi di F-Droid agar kamu bisa mengunduh dan memperbarui aplikasi secara lebih aman, transparan, dan terverifikasi open-source. Terima kasih atas dukungan kamu!",
+        "en": "Good news! HiFi is currently undergoing the official submission process for F-Droid so you can install and update the app more safely and transparently as verified open-source software. Thank you for your support!"
+      },
+      "button": {},
+      "link": ""
+    }
+  ]
 }
