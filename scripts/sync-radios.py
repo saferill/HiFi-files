@@ -247,14 +247,48 @@ def verify_video_is_live(video_id):
             data = json.load(resp)
         vd = data.get("videoDetails", {})
         ps = data.get("playabilityStatus", {}).get("status", "")
-        if ps in ("ERROR", "LOGIN_REQUIRED"):
+        if ps == "ERROR":
             return "DEAD", f"Player status {ps}"
         if "isLive" in vd:
             player_is_live = bool(vd.get("isLive"))
             if not player_is_live:
                 return "DEAD", "Stream has ended (videoDetails.isLive=False)"
+        # Note: ps == "LOGIN_REQUIRED" is a datacenter IP bot-check on /player,
+        # NOT a dead stream; fall through to Innertube /next & watch HTML.
     except Exception as e:
         player_reason = str(e)
+
+    # 1b. Check Innertube /next API (works reliably on datacenter IPs without LOGIN_REQUIRED)
+    try:
+        next_url = "https://www.youtube.com/youtubei/v1/next?prettyPrint=false"
+        next_payload = {
+            "context": {
+                "client": {
+                    "clientName": "WEB",
+                    "clientVersion": "2.20250101.01.00",
+                    "hl": "en",
+                    "gl": "US"
+                }
+            },
+            "videoId": video_id
+        }
+        next_req = urllib.request.Request(
+            next_url,
+            data=json.dumps(next_payload).encode("utf-8"),
+            headers={"Content-Type": "application/json", "User-Agent": USER_AGENT}
+        )
+        with urllib.request.urlopen(next_req, timeout=8) as resp:
+            next_txt = resp.read().decode("utf-8", errors="ignore")
+        next_lower = next_txt.lower()
+        if '"islive":true' in next_lower or "watching now" in next_lower:
+            if check_oembed(video_id) and check_thumbnail(video_id):
+                return "LIVE", "OK (verified via Innertube next + oEmbed)"
+            return "DEAD", "oEmbed or thumbnail check failed"
+        if "streamed live" in next_lower or '"islive":false' in next_lower:
+            return "DEAD", "Stream has ended (Innertube next)"
+    except Exception as e:
+        if not player_reason:
+            player_reason = str(e)
 
     # 2. Check watch HTML for isLiveNow & playabilityStatus
     try:
