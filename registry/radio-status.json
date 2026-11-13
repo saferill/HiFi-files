@@ -1,103 +1,135 @@
 {
-  "lastUpdated": "2026-11-13T14:06:00Z",
+  "lastUpdated": "2026-11-13T15:46:09Z",
   "stations": {
     "soft-feelings": {
       "lastVerified": "2026-11-13T14:06:00Z",
-      "consecutiveFailures": 0,
-      "lastChecked": "2026-11-13T14:06:00Z",
-      "lastStatus": "OK (@soft_feelings-25 via Innertube resolve_url)",
-      "lastGoodVideoId": "GwWxRgH4nnA"
+      "consecutiveFailures": 1,
+      "lastChecked": "2026-11-13T15:46:09Z",
+      "lastStatus": "EXCLUDED_TRANSIENT (Historical telemetry lacks v2 identity verification proof): LOGIN_REQUIRED bot/auth gate (Sign in to confirm you’re not a bot)",
+      "lastGoodVideoId": "GwWxRgH4nnA",
+      "lastFailureCategory": "bot_check",
+      "verificationState": "TRANSIENT"
     },
     "live-radio-mix": {
       "lastVerified": "2026-11-13T14:06:00Z",
-      "consecutiveFailures": 0,
-      "lastChecked": "2026-11-13T14:06:00Z",
-      "lastStatus": "OK (preferredVid b-bK2Vn3D38)",
-      "lastGoodVideoId": "b-bK2Vn3D38"
+      "consecutiveFailures": 1,
+      "lastChecked": "2026-11-13T15:46:09Z",
+      "lastStatus": "EXCLUDED_TRANSIENT (Historical telemetry lacks v2 identity verification proof): LOGIN_REQUIRED bot/auth gate (Sign in to confirm you’re not a bot)",
+      "lastGoodVideoId": "b-bK2Vn3D38",
+      "lastFailureCategory": "bot_check",
+      "verificationState": "TRANSIENT"
     },
     "the-good-life-radio": {
       "lastVerified": "2026-11-13T14:06:00Z",
-      "consecutiveFailures": 0,
-      "lastChecked": "2026-11-13T14:06:00Z",
-      "lastStatus": "OK (@TheGoodLifeRadio via Innertube resolve_url)",
-      "lastGoodVideoId": "IkmLXvBfVv0"
+      "consecutiveFailures": 1,
+      "lastChecked": "2026-11-13T15:46:09Z",
+      "lastStatus": "EXCLUDED_TRANSIENT (Historical telemetry lacks v2 identity verification proof): LOGIN_REQUIRED bot/auth gate (Sign in to confirm you’re not a bot)",
+      "lastGoodVideoId": "IkmLXvBfVv0",
+      "lastFailureCategory": "bot_check",
+      "verificationState": "TRANSIENT"
     },
     "lofi-girl": {
       "lastVerified": "2026-11-13T14:06:00Z",
-      "consecutiveFailures": 0,
-      "lastChecked": "2026-11-13T14:06:00Z",
-      "lastStatus": "OK (@LofiGirl via Innertube resolve_url)",
-      "lastGoodVideoId": "4t4AQ15yj1M"
+      "consecutiveFailures": 1,
+      "lastChecked": "2026-11-13T15:46:09Z",
+      "lastStatus": "EXCLUDED_TRANSIENT (Historical telemetry lacks v2 identity verification proof): LOGIN_REQUIRED bot/auth gate (Sign in to confirm you’re not a bot)",
+      "lastGoodVideoId": "4t4AQ15yj1M",
+      "lastFailureCategory": "bot_check",
+      "verificationState": "TRANSIENT"
     },
     "chillhop-music": {
       "lastVerified": "2026-11-13T14:06:00Z",
-      "consecutiveFailures": 0,
-      "lastChecked": "2026-11-13T14:06:00Z",
-      "lastStatus": "OK (@ChillhopMusic via Innertube resolve_url)",
-      "lastGoodVideoId": "jiua2V9q9V0"
+      "consecutiveFailures": 1,
+      "lastChecked": "2026-11-13T15:46:09Z",
+      "lastStatus": "EXCLUDED_TRANSIENT (Historical telemetry lacks v2 identity verification proof): LOGIN_REQUIRED bot/auth gate (Sign in to confirm you’re not a bot)",
+      "lastGoodVideoId": "jiua2V9q9V0",
+      "lastFailureCategory": "bot_check",
+      "verificationState": "TRANSIENT"
     },
     "cafe-jazz-tokyo": {
       "lastVerified": "2026-11-13T14:06:00Z",
-      "consecutiveFailures": 0,
-      "lastChecked": "2026-11-13T14:06:00Z",
-      "lastStatus": "OK (@CafeMusicBGMchannel via Innertube resolve_url)",
-      "lastGoodVideoId": "WMi37od24aw"
+      "consecutiveFailures": 1,
+      "lastChecked": "2026-11-13T15:46:09Z",
+      "lastStatus": "EXCLUDED_TRANSIENT (Historical telemetry lacks v2 identity verification proof): LOGIN_REQUIRED bot/auth gate (Sign in to confirm you’re not a bot)",
+      "lastGoodVideoId": "WMi37od24aw",
+      "lastFailureCategory": "bot_check",
+      "verificationState": "TRANSIENT"
     },
     "yellow-brick-cinema": {
       "lastVerified": "2026-11-13T14:06:00Z",
-      "consecutiveFailures": 0,
-      "lastChecked": "2026-11-13T14:06:00Z",
-      "lastStatus": "OK (@YellowBrickCinema via Innertube resolve_url)",
-      "lastGoodVideoId": "GtGrRTv5yP4"
+      "consecutiveFailures": 1,
+      "lastChecked": "2026-11-13T15:46:09Z",
+      "lastStatus": "EXCLUDED_TRANSIENT (Historical telemetry lacks v2 identity verification proof): LOGIN_REQUIRED bot/auth gate (Sign in to confirm you’re not a bot)",
+      "lastGoodVideoId": "GtGrRTv5yP4",
+      "lastFailureCategory": "bot_check",
+      "verificationState": "TRANSIENT"
     },
     "nasa-space-live": {
       "lastVerified": "2026-11-13T14:06:00Z",
-      "consecutiveFailures": 0,
-      "lastChecked": "2026-11-13T14:06:00Z",
-      "lastStatus": "OK (@NASA via Innertube resolve_url)",
-      "lastGoodVideoId": "ROboUHfPUrU"
+      "consecutiveFailures": 1,
+      "lastChecked": "2026-11-13T15:46:09Z",
+      "lastStatus": "EXCLUDED_TRANSIENT (Historical telemetry lacks v2 identity verification proof): LOGIN_REQUIRED bot/auth gate (Sign in to confirm you’re not a bot)",
+      "lastGoodVideoId": "ROboUHfPUrU",
+      "lastFailureCategory": "bot_check",
+      "verificationState": "TRANSIENT"
     },
     "aljazeera-english": {
       "lastVerified": "2026-11-13T14:06:00Z",
-      "consecutiveFailures": 0,
-      "lastChecked": "2026-11-13T14:06:00Z",
-      "lastStatus": "OK (@AlJazeeraEnglish via Innertube resolve_url)",
-      "lastGoodVideoId": "gCNeDWCI0vo"
+      "consecutiveFailures": 1,
+      "lastChecked": "2026-11-13T15:46:09Z",
+      "lastStatus": "EXCLUDED_TRANSIENT (Historical telemetry lacks v2 identity verification proof): LOGIN_REQUIRED bot/auth gate (Sign in to confirm you’re not a bot)",
+      "lastGoodVideoId": "gCNeDWCI0vo",
+      "lastFailureCategory": "bot_check",
+      "verificationState": "TRANSIENT"
     },
     "sky-news-live": {
       "lastVerified": "2026-11-13T14:06:00Z",
-      "consecutiveFailures": 0,
-      "lastChecked": "2026-11-13T14:06:00Z",
-      "lastStatus": "OK (@SkyNews via Innertube resolve_url)",
-      "lastGoodVideoId": "umLWFz4izTM"
+      "consecutiveFailures": 1,
+      "lastChecked": "2026-11-13T15:46:09Z",
+      "lastStatus": "EXCLUDED_TRANSIENT (Historical telemetry lacks v2 identity verification proof): LOGIN_REQUIRED bot/auth gate (Sign in to confirm you’re not a bot)",
+      "lastGoodVideoId": "umLWFz4izTM",
+      "lastFailureCategory": "bot_check",
+      "verificationState": "TRANSIENT"
     },
     "abc-news-live": {
       "lastVerified": "2026-11-13T14:06:00Z",
-      "consecutiveFailures": 0,
-      "lastChecked": "2026-11-13T14:06:00Z",
-      "lastStatus": "OK (@ABCNews via Innertube resolve_url)",
-      "lastGoodVideoId": "sq9r3gFKphU"
+      "consecutiveFailures": 1,
+      "lastChecked": "2026-11-13T15:46:09Z",
+      "lastStatus": "EXCLUDED_TRANSIENT (Historical telemetry lacks v2 identity verification proof): LOGIN_REQUIRED bot/auth gate (Sign in to confirm you’re not a bot)",
+      "lastGoodVideoId": "sq9r3gFKphU",
+      "lastFailureCategory": "bot_check",
+      "verificationState": "TRANSIENT"
     },
     "euronews-english": {
       "lastVerified": "2026-11-13T14:06:00Z",
-      "consecutiveFailures": 0,
-      "lastChecked": "2026-11-13T14:06:00Z",
-      "lastStatus": "OK (@euronews via Innertube resolve_url)",
-      "lastGoodVideoId": "pykpO5kQJ98"
+      "consecutiveFailures": 1,
+      "lastChecked": "2026-11-13T15:46:09Z",
+      "lastStatus": "EXCLUDED_TRANSIENT (Historical telemetry lacks v2 identity verification proof): LOGIN_REQUIRED bot/auth gate (Sign in to confirm you’re not a bot)",
+      "lastGoodVideoId": "pykpO5kQJ98",
+      "lastFailureCategory": "bot_check",
+      "verificationState": "TRANSIENT"
     },
     "makkah-live": {
       "lastVerified": "2026-11-13T14:06:00Z",
-      "consecutiveFailures": 0,
-      "lastChecked": "2026-11-13T14:06:00Z",
-      "lastStatus": "OK (@MakkahLiveHD via Innertube resolve_url)",
-      "lastGoodVideoId": "HMOPLGDCUyM"
+      "consecutiveFailures": 1,
+      "lastChecked": "2026-11-13T15:46:09Z",
+      "lastStatus": "EXCLUDED_TRANSIENT (Historical telemetry lacks v2 identity verification proof): LOGIN_REQUIRED bot/auth gate (Sign in to confirm you’re not a bot)",
+      "lastGoodVideoId": "HMOPLGDCUyM",
+      "lastFailureCategory": "bot_check",
+      "verificationState": "TRANSIENT"
     },
     "kompas-tv-live": {
       "lastVerified": "2026-11-13T14:06:00Z",
-      "consecutiveFailures": 0,
-      "lastChecked": "2026-11-13T14:06:00Z",
-      "lastStatus": "OK (via Live Search)",
-      "lastGoodVideoId": "DOOrIxw5xOw"
+      "consecutiveFailures": 1,
+      "lastChecked": "2026-11-13T15:46:09Z",
+      "lastStatus": "EXCLUDED_TRANSIENT (Historical telemetry lacks v2 identity verification proof): LOGIN_REQUIRED bot/auth gate (Sign in to confirm you’re not a bot)",
+      "lastGoodVideoId": "DOOrIxw5xOw",
+      "lastFailureCategory": "bot_check",
+      "verificationState": "TRANSIENT"
     }
-  }
+  },
+  "schemaVersion": 2,
+  "providerDegraded": true,
+  "lastPublished": "2026-11-13T15:46:09Z",
+  "lastPublishedCount": 0
 }
