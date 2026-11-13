@@ -53,12 +53,13 @@ STATION_CHANNELS = [
     },
     {
         "id": "live-radio-mix",
-        "title": "Radio 2000s Pop Hits",
-        "subtitle": "Nostalgia 2000s • LIVE",
+        "title": "Best Radio 1 POP Hits",
+        "subtitle": "Pop Hits 2026 • LIVE",
         "handle": "@liveradiomix",
-        "searchQuery": "Live Radio Mix 2000s pop hits live",
+        "searchQuery": "Best Radio 1 POP Hits live",
         "backupHandles": ["@soft_feelings-25"],
-        "defaultVid": "0C4kZlNrhbI"
+        "preferredVid": "b-bK2Vn3D38",
+        "defaultVid": "b-bK2Vn3D38"
     },
     {
         "id": "the-good-life-radio",
@@ -461,6 +462,13 @@ def resolve_via_search(query):
 
 def find_live_id_for_station(item, used_vids):
     """Try all resolution methods for a station and return (success, vid, reason)."""
+    pref = item.get("preferredVid")
+    if pref and pref not in used_vids:
+        status, reason = verify_video_is_live(pref)
+        if status == "LIVE":
+            return True, pref, f"OK (preferredVid {pref})"
+        print(f"  [INFO] preferredVid {pref} not live ({reason}), falling back to resolvers", flush=True)
+
     handles = [item["handle"]] + item.get("backupHandles", [])
 
     # 1. Try handle-based resolvers first (most accurate for exact channel)
