@@ -78,15 +78,15 @@
       "id": "sky-news-live",
       "title": "Sky News UK & World",
       "subtitle": "Breaking News • LIVE",
-      "thumbnail": "https://i.ytimg.com/vi/xMboXwD4MJs/hqdefault.jpg",
-      "videoId": "xMboXwD4MJs"
+      "thumbnail": "https://i.ytimg.com/vi/umLWFz4izTM/hqdefault.jpg",
+      "videoId": "umLWFz4izTM"
     },
     {
       "id": "abc-news-live",
       "title": "ABC News Live (USA)",
       "subtitle": "US & World News • LIVE",
-      "thumbnail": "https://i.ytimg.com/vi/KQhNZQ_Uag8/hqdefault.jpg",
-      "videoId": "KQhNZQ_Uag8"
+      "thumbnail": "https://i.ytimg.com/vi/sq9r3gFKphU/hqdefault.jpg",
+      "videoId": "sq9r3gFKphU"
     },
     {
       "id": "euronews-english",
@@ -106,13 +106,13 @@
       "id": "kompas-tv-live",
       "title": "Kompas TV Berita 24 Jam",
       "subtitle": "Berita Indonesia • LIVE",
-      "thumbnail": "https://i.ytimg.com/vi/-m_SSRMqUr0/hqdefault.jpg",
-      "videoId": "-m_SSRMqUr0"
+      "thumbnail": "https://i.ytimg.com/vi/DOOrIxw5xOw/hqdefault.jpg",
+      "videoId": "DOOrIxw5xOw"
     }
   ],
   "promos": [
     {
-      "id": "fdroid-notice-20261113-06",
+      "id": "fdroid-notice-20261113-12",
       "image": {},
       "title": {
         "id": "HiFi Menuju F-Droid! 🚀",
