@@ -10,7 +10,99 @@
   "greeting": {
     "dates": {}
   },
-  "radioStations": [],
+  "radioStations": [
+    {
+      "id": "soft-feelings",
+      "title": "Soft Feelings Top Hits",
+      "subtitle": "Easy Listening & Viral • LIVE",
+      "thumbnail": "https://i.ytimg.com/vi/GwWxRgH4nnA/hqdefault.jpg",
+      "videoId": "GwWxRgH4nnA"
+    },
+    {
+      "id": "live-radio-mix",
+      "title": "Best Radio 1 POP Hits",
+      "subtitle": "Pop Hits 2026 • LIVE",
+      "thumbnail": "https://i.ytimg.com/vi/b-bK2Vn3D38/hqdefault.jpg",
+      "videoId": "b-bK2Vn3D38"
+    },
+    {
+      "id": "the-good-life-radio",
+      "title": "The Good Life Radio",
+      "subtitle": "Deep House & Summer Chill • LIVE",
+      "thumbnail": "https://i.ytimg.com/vi/IkmLXvBfVv0/hqdefault.jpg",
+      "videoId": "IkmLXvBfVv0"
+    },
+    {
+      "id": "lofi-girl",
+      "title": "Lofi Hip Hop Radio",
+      "subtitle": "Lofi Girl • LIVE",
+      "thumbnail": "https://i.ytimg.com/vi/4t4AQ15yj1M/hqdefault.jpg",
+      "videoId": "4t4AQ15yj1M"
+    },
+    {
+      "id": "chillhop-music",
+      "title": "Chillhop Essentials",
+      "subtitle": "Jazzy Beats • LIVE",
+      "thumbnail": "https://i.ytimg.com/vi/jiua2V9q9V0/hqdefault.jpg",
+      "videoId": "jiua2V9q9V0"
+    },
+    {
+      "id": "cafe-jazz-tokyo",
+      "title": "Tokyo Cafe Jazz BGM",
+      "subtitle": "Cafe Music • LIVE",
+      "thumbnail": "https://i.ytimg.com/vi/Ij5zelA8w-Y/hqdefault.jpg",
+      "videoId": "Ij5zelA8w-Y"
+    },
+    {
+      "id": "yellow-brick-cinema",
+      "title": "Deep Sleep & Relax Piano",
+      "subtitle": "Sleep & Meditation • LIVE",
+      "thumbnail": "https://i.ytimg.com/vi/83p6HQtt0fw/hqdefault.jpg",
+      "videoId": "83p6HQtt0fw"
+    },
+    {
+      "id": "nasa-space-live",
+      "title": "NASA Earth & Space Views",
+      "subtitle": "ISS Space Live • LIVE",
+      "thumbnail": "https://i.ytimg.com/vi/ROboUHfPUrU/hqdefault.jpg",
+      "videoId": "ROboUHfPUrU"
+    },
+    {
+      "id": "aljazeera-english",
+      "title": "Al Jazeera English",
+      "subtitle": "Global News • LIVE",
+      "thumbnail": "https://i.ytimg.com/vi/gCNeDWCI0vo/hqdefault.jpg",
+      "videoId": "gCNeDWCI0vo"
+    },
+    {
+      "id": "abc-news-live",
+      "title": "ABC News Live (USA)",
+      "subtitle": "US & World News • LIVE",
+      "thumbnail": "https://i.ytimg.com/vi/sq9r3gFKphU/hqdefault.jpg",
+      "videoId": "sq9r3gFKphU"
+    },
+    {
+      "id": "euronews-english",
+      "title": "Euronews English",
+      "subtitle": "European News • LIVE",
+      "thumbnail": "https://i.ytimg.com/vi/pykpO5kQJ98/hqdefault.jpg",
+      "videoId": "pykpO5kQJ98"
+    },
+    {
+      "id": "makkah-live",
+      "title": "Makkah Live & Al-Qur'an",
+      "subtitle": "Masjidil Haram • LIVE",
+      "thumbnail": "https://i.ytimg.com/vi/HMOPLGDCUyM/hqdefault.jpg",
+      "videoId": "HMOPLGDCUyM"
+    },
+    {
+      "id": "kompas-tv-live",
+      "title": "Kompas TV Berita 24 Jam",
+      "subtitle": "Berita Indonesia • LIVE",
+      "thumbnail": "https://i.ytimg.com/vi/0_8RqyozfAM/hqdefault.jpg",
+      "videoId": "0_8RqyozfAM"
+    }
+  ],
   "promos": [
     {
       "id": "fdroid-notice-20261113-12",

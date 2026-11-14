@@ -432,6 +432,20 @@ def run_sync(
             flush=True,
         )
 
+    if provider_degraded and len(active_stations) == 0:
+        print(
+            "[ERROR] Widespread provider degradation detected (bot_check/network_error) with 0 active stations. "
+            "Aborting publication so existing remote configs are preserved untouched.",
+            flush=True,
+        )
+        if not dry_run:
+            status_data["lastUpdated"] = now_iso
+            try:
+                atomic_write_json(status_registry_path, status_data)
+            except Exception as e:
+                print(f"[ERROR] Failed to write telemetry {status_registry_path}: {e}", flush=True)
+        return 1
+
     # Prepare and validate ALL candidate configs in memory BEFORE writing any file
     prepared_configs = []
     for cfg_path in config_files:

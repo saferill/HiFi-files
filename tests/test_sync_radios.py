@@ -684,6 +684,64 @@ class TestDiscovery(unittest.TestCase):
                 with open(p, "r", encoding="utf-8") as f:
                     self.assertEqual(f.read(), sentinel)
 
+    def test_38_provider_degraded_bot_check_preserves_existing_configs(self):
+        stations = make_stations(4)
+        initial_cfg = [
+            {
+                "id": st.id,
+                "title": st.title,
+                "subtitle": st.subtitle,
+                "thumbnail": f"https://i.ytimg.com/vi/oldVid{i:05d}/hqdefault.jpg",
+                "videoId": f"oldVid{i:05d}",
+            }
+            for i, st in enumerate(stations)
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            rc_main = os.path.join(tmp, "remote-config.json")
+            rc_dev = os.path.join(tmp, "remote-config-dev.json")
+            reg_path = os.path.join(tmp, "radio-status.json")
+            for p in (rc_main, rc_dev):
+                with open(p, "w", encoding="utf-8") as f:
+                    json.dump({"radioStations": initial_cfg}, f)
+
+            # Expired grace (>6h) + all stations hitting YouTube bot_check
+            expired_iso = "2020-01-01T00:00:00Z"
+            with open(reg_path, "w", encoding="utf-8") as f:
+                json.dump(
+                    {
+                        "stations": {
+                            st.id: {
+                                "verificationVersion": 2,
+                                "lastVerified": expired_iso,
+                                "lastGoodVideoId": f"oldVid{i:05d}",
+                                "verifiedChannelId": st.allowed_channel_ids[0],
+                            }
+                            for i, st in enumerate(stations)
+                        }
+                    },
+                    f,
+                )
+
+            rc = sync_radios.run_sync(
+                config_files=[rc_main, rc_dev],
+                status_registry_path=reg_path,
+                stations=stations,
+                sleep_fn=lambda _: None,
+                find_fn=lambda item, used, **kw: (False, None, None, "bot_check"),
+                verify_fn=lambda vid, **kw: radio_verifier.VerificationResult(
+                    "TRANSIENT", "LOGIN_REQUIRED bot/auth gate", category="bot_check", video_id=vid
+                ),
+            )
+            self.assertEqual(rc, 1)
+            for p in (rc_main, rc_dev):
+                with open(p, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                self.assertEqual(len(data["radioStations"]), 4)
+                self.assertEqual(data["radioStations"][0]["videoId"], "oldVid00000")
+            with open(reg_path, "r", encoding="utf-8") as f:
+                reg = json.load(f)
+            self.assertTrue(reg.get("providerDegraded"))
+
 
 if __name__ == "__main__":
     unittest.main()
