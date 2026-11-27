@@ -1,10 +1,10 @@
 {
-  "lastUpdated": "2026-11-26T21:04:24Z",
+  "lastUpdated": "2026-11-27T03:56:42Z",
   "stations": {
     "soft-feelings": {
       "lastVerified": "2026-11-14T03:41:45Z",
-      "consecutiveFailures": 3,
-      "lastChecked": "2026-11-26T21:04:24Z",
+      "consecutiveFailures": 4,
+      "lastChecked": "2026-11-27T03:56:42Z",
       "lastStatus": "OFFLINE: Missing, invalid, or duplicate existing videoId",
       "lastGoodVideoId": "GwWxRgH4nnA",
       "lastFailureCategory": "invalid_input",
@@ -14,8 +14,8 @@
     },
     "live-radio-mix": {
       "lastVerified": "2026-11-14T03:41:45Z",
-      "consecutiveFailures": 3,
-      "lastChecked": "2026-11-26T21:04:24Z",
+      "consecutiveFailures": 4,
+      "lastChecked": "2026-11-27T03:56:42Z",
       "lastStatus": "OFFLINE: Missing, invalid, or duplicate existing videoId",
       "lastGoodVideoId": "b-bK2Vn3D38",
       "lastFailureCategory": "invalid_input",
@@ -25,8 +25,8 @@
     },
     "the-good-life-radio": {
       "lastVerified": "2026-11-14T03:41:45Z",
-      "consecutiveFailures": 3,
-      "lastChecked": "2026-11-26T21:04:24Z",
+      "consecutiveFailures": 4,
+      "lastChecked": "2026-11-27T03:56:42Z",
       "lastStatus": "OFFLINE: Missing, invalid, or duplicate existing videoId",
       "lastGoodVideoId": "IkmLXvBfVv0",
       "lastFailureCategory": "invalid_input",
@@ -36,8 +36,8 @@
     },
     "lofi-girl": {
       "lastVerified": "2026-11-14T03:41:45Z",
-      "consecutiveFailures": 3,
-      "lastChecked": "2026-11-26T21:04:24Z",
+      "consecutiveFailures": 4,
+      "lastChecked": "2026-11-27T03:56:42Z",
       "lastStatus": "OFFLINE: Missing, invalid, or duplicate existing videoId",
       "lastGoodVideoId": "4t4AQ15yj1M",
       "lastFailureCategory": "invalid_input",
@@ -47,8 +47,8 @@
     },
     "chillhop-music": {
       "lastVerified": "2026-11-14T03:41:45Z",
-      "consecutiveFailures": 3,
-      "lastChecked": "2026-11-26T21:04:24Z",
+      "consecutiveFailures": 4,
+      "lastChecked": "2026-11-27T03:56:42Z",
       "lastStatus": "OFFLINE: Missing, invalid, or duplicate existing videoId",
       "lastGoodVideoId": "jiua2V9q9V0",
       "lastFailureCategory": "invalid_input",
@@ -58,8 +58,8 @@
     },
     "cafe-jazz-tokyo": {
       "lastVerified": "2026-11-14T03:41:45Z",
-      "consecutiveFailures": 3,
-      "lastChecked": "2026-11-26T21:04:24Z",
+      "consecutiveFailures": 4,
+      "lastChecked": "2026-11-27T03:56:42Z",
       "lastStatus": "OFFLINE: Missing, invalid, or duplicate existing videoId",
       "lastGoodVideoId": "Ij5zelA8w-Y",
       "lastFailureCategory": "invalid_input",
@@ -69,8 +69,8 @@
     },
     "yellow-brick-cinema": {
       "lastVerified": "2026-11-14T03:41:45Z",
-      "consecutiveFailures": 3,
-      "lastChecked": "2026-11-26T21:04:24Z",
+      "consecutiveFailures": 4,
+      "lastChecked": "2026-11-27T03:56:42Z",
       "lastStatus": "OFFLINE: Missing, invalid, or duplicate existing videoId",
       "lastGoodVideoId": "83p6HQtt0fw",
       "lastFailureCategory": "invalid_input",
@@ -80,8 +80,8 @@
     },
     "nasa-space-live": {
       "lastVerified": "2026-11-14T03:41:45Z",
-      "consecutiveFailures": 3,
-      "lastChecked": "2026-11-26T21:04:24Z",
+      "consecutiveFailures": 4,
+      "lastChecked": "2026-11-27T03:56:42Z",
       "lastStatus": "OFFLINE: Missing, invalid, or duplicate existing videoId",
       "lastGoodVideoId": "ROboUHfPUrU",
       "lastFailureCategory": "invalid_input",
@@ -91,8 +91,8 @@
     },
     "aljazeera-english": {
       "lastVerified": "2026-11-14T03:41:45Z",
-      "consecutiveFailures": 3,
-      "lastChecked": "2026-11-26T21:04:24Z",
+      "consecutiveFailures": 4,
+      "lastChecked": "2026-11-27T03:56:42Z",
       "lastStatus": "OFFLINE: Missing, invalid, or duplicate existing videoId",
       "lastGoodVideoId": "gCNeDWCI0vo",
       "lastFailureCategory": "invalid_input",
@@ -102,8 +102,8 @@
     },
     "sky-news-live": {
       "lastVerified": "2026-11-13T14:06:00Z",
-      "consecutiveFailures": 8,
-      "lastChecked": "2026-11-26T21:04:24Z",
+      "consecutiveFailures": 9,
+      "lastChecked": "2026-11-27T03:56:42Z",
       "lastStatus": "OFFLINE: Missing, invalid, or duplicate existing videoId",
       "lastGoodVideoId": "umLWFz4izTM",
       "lastFailureCategory": "invalid_input",
@@ -111,8 +111,8 @@
     },
     "abc-news-live": {
       "lastVerified": "2026-11-14T03:41:45Z",
-      "consecutiveFailures": 3,
-      "lastChecked": "2026-11-26T21:04:24Z",
+      "consecutiveFailures": 4,
+      "lastChecked": "2026-11-27T03:56:42Z",
       "lastStatus": "OFFLINE: Missing, invalid, or duplicate existing videoId",
       "lastGoodVideoId": "sq9r3gFKphU",
       "lastFailureCategory": "invalid_input",
@@ -122,8 +122,8 @@
     },
     "euronews-english": {
       "lastVerified": "2026-11-14T03:41:45Z",
-      "consecutiveFailures": 3,
-      "lastChecked": "2026-11-26T21:04:24Z",
+      "consecutiveFailures": 4,
+      "lastChecked": "2026-11-27T03:56:42Z",
       "lastStatus": "OFFLINE: Missing, invalid, or duplicate existing videoId",
       "lastGoodVideoId": "pykpO5kQJ98",
       "lastFailureCategory": "invalid_input",
@@ -133,8 +133,8 @@
     },
     "makkah-live": {
       "lastVerified": "2026-11-14T03:41:45Z",
-      "consecutiveFailures": 3,
-      "lastChecked": "2026-11-26T21:04:24Z",
+      "consecutiveFailures": 4,
+      "lastChecked": "2026-11-27T03:56:42Z",
       "lastStatus": "OFFLINE: Missing, invalid, or duplicate existing videoId",
       "lastGoodVideoId": "HMOPLGDCUyM",
       "lastFailureCategory": "invalid_input",
@@ -144,8 +144,8 @@
     },
     "kompas-tv-live": {
       "lastVerified": "2026-11-14T03:41:45Z",
-      "consecutiveFailures": 3,
-      "lastChecked": "2026-11-26T21:04:24Z",
+      "consecutiveFailures": 4,
+      "lastChecked": "2026-11-27T03:56:42Z",
       "lastStatus": "OFFLINE: Missing, invalid, or duplicate existing videoId",
       "lastGoodVideoId": "0_8RqyozfAM",
       "lastFailureCategory": "invalid_input",
@@ -156,6 +156,6 @@
   },
   "schemaVersion": 2,
   "providerDegraded": false,
-  "lastPublished": "2026-11-26T21:04:24Z",
+  "lastPublished": "2026-11-27T03:56:42Z",
   "lastPublishedCount": 0
 }
